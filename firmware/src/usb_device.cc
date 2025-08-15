@@ -40,13 +40,13 @@ void usb_device_task(void) {
 // Invoked when device is mounted
 void tud_mount_cb(void)
 {
-    // Device is mounted and ready
+    debug_printf("=== USB DEVICE MOUNTED ===\n");
 }
 
 // Invoked when device is unmounted
 void tud_umount_cb(void)
 {
-    // Device is unmounted
+    debug_printf("=== USB DEVICE UNMOUNTED ===\n");
 }
 
 // Invoked when usb bus is suspended

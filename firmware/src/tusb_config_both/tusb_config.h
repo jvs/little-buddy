@@ -18,22 +18,23 @@
 #define CFG_TUD_CDC_RX_BUFSIZE 64
 #define CFG_TUD_CDC_TX_BUFSIZE 64
 
-#define BOARD_TUH_RHPORT 1
-#define CFG_TUSB_RHPORT1_MODE (OPT_MODE_HOST | OPT_MODE_FULL_SPEED)
+// Temporarily disable host mode for device testing
+// #define BOARD_TUH_RHPORT 1
+// #define CFG_TUSB_RHPORT1_MODE (OPT_MODE_HOST | OPT_MODE_FULL_SPEED)
 
-#define CFG_TUH_ENUMERATION_BUFSIZE 512
+// #define CFG_TUH_ENUMERATION_BUFSIZE 512
 
-#define CFG_TUH_HUB 1
-#define CFG_TUH_CDC 0
-#define CFG_TUH_HID 16
-#define CFG_TUH_MSC 0
-#define CFG_TUH_VENDOR 0
+// #define CFG_TUH_HUB 1
+// #define CFG_TUH_CDC 0
+// #define CFG_TUH_HID 16
+// #define CFG_TUH_MSC 0
+// #define CFG_TUH_VENDOR 0
 
-#define CFG_TUH_DEVICE_MAX 16
+// #define CFG_TUH_DEVICE_MAX 16
 
-#define CFG_TUH_HID_EPIN_BUFSIZE 64
-#define CFG_TUH_HID_EPOUT_BUFSIZE 64
+// #define CFG_TUH_HID_EPIN_BUFSIZE 64
+// #define CFG_TUH_HID_EPOUT_BUFSIZE 64
 
-#define CFG_TUH_RPI_PIO_USB 1
+// #define CFG_TUH_RPI_PIO_USB 1
 
 #endif
