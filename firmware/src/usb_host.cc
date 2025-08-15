@@ -20,7 +20,7 @@ void usb_host_init(void) {
 }
 
 void usb_host_task(void) {
-#ifdef CFG_TUH_ENABLED
+#if CFG_TUH_ENABLED
     tuh_task();
 #endif
 }
@@ -55,7 +55,7 @@ const last_report_t* usb_host_get_last_report(uint8_t instance) {
 }
 
 // TinyUSB callbacks (only compiled when host mode is enabled)
-#ifdef CFG_TUH_ENABLED
+#if CFG_TUH_ENABLED
 void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_report, uint16_t desc_len) {
     g_mount_count++;  // Track mount calls
     uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
