@@ -7,6 +7,7 @@
 #include "activity_led.h"
 #include "sh1107_display.h"
 #include "usb_host.h"
+#include "usb_device.h"
 #include "usb_events.h"
 
 
@@ -24,8 +25,9 @@ int main() {
     sh1107_t display;
     bool display_ok = sh1107_init(&display, i2c1);
 
-    // Initialize USB host
+    // Initialize USB host and device
     usb_host_init();
+    usb_device_init();
 
     // Show startup message
     if (display_ok) {
@@ -38,9 +40,12 @@ int main() {
     usb_event_t last_event = {};
     uint32_t last_display_update = 0;
 
+    debug_printf("Little Buddy starting up...\n");
+    
     while (true) {
-        // Service USB host
+        // Service USB host and device
         usb_host_task();
+        usb_device_task();
 
         // Process USB events
         usb_event_queue_t* queue = usb_host_get_event_queue();

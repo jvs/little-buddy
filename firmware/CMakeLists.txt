@@ -35,6 +35,8 @@ add_executable(little_buddy
     src/usb_events.cc
     src/usb_host.cc
     src/hid_parser.cc
+    src/usb_device.cc
+    src/usb_descriptors.c
 )
 
 if((PICO_BOARD STREQUAL "pico") OR (PICO_BOARD STREQUAL "pico2"))
@@ -62,6 +64,10 @@ target_link_libraries(little_buddy
     tinyusb_board
     tinyusb_pico_pio_usb
 )
+
+# Disable Pico SDK USB stdio since we're using custom TinyUSB
+pico_enable_stdio_usb(little_buddy 0)
+pico_enable_stdio_uart(little_buddy 0)
 
 pico_set_binary_type(little_buddy copy_to_ram)
 if(PICO_PLATFORM STREQUAL "rp2040")

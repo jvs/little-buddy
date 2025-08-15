@@ -1,6 +1,7 @@
 #include "usb_host.h"
 #include "usb_events.h"
 #include "hid_parser.h"
+#include "usb_device.h"
 #include "tusb.h"
 #include "pico/time.h"
 #include <stdio.h>
@@ -49,6 +50,11 @@ const char* usb_host_get_interface_info(uint8_t instance) {
 void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_report, uint16_t desc_len) {
     g_mount_count++;  // Track mount calls
     uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
+    
+    debug_printf("=== HID MOUNT ===\n");
+    debug_printf("Device: addr=%d, instance=%d\n", dev_addr, instance);
+    debug_printf("Protocol: %d (0=none, 1=kbd, 2=mouse)\n", itf_protocol);
+    debug_printf("Descriptor: len=%d, ptr=%p\n", desc_len, desc_report);
     
     // Store protocol for this interface
     if (instance < CFG_TUH_HID) {
@@ -123,6 +129,13 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
     
     // Use stored protocol for this interface
     uint8_t const itf_protocol = (instance < CFG_TUH_HID) ? g_interface_protocols[instance] : HID_ITF_PROTOCOL_NONE;
+    
+    // Debug: Show raw report data
+    debug_printf("REPORT IF%d: len=%d, bytes=[", instance, len);
+    for (int i = 0; i < len && i < 8; i++) {
+        debug_printf("%02X ", report[i]);
+    }
+    debug_printf("]\n");
     
     usb_event_t event;
     event.timestamp_ms = to_ms_since_boot(get_absolute_time());
