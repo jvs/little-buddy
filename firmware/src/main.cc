@@ -35,7 +35,7 @@ int main() {
         sh1107_display(&display);
     }
 
-    usb_event_t last_event = {0};
+    usb_event_t last_event = {};
     uint32_t last_display_update = 0;
 
     while (true) {
