@@ -14,3 +14,7 @@ void activity_led_off() {
     led_state = false;
     board_led_write(false);
 }
+
+bool activity_led_check() {
+    return led_state;
+}

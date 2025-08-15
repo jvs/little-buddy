@@ -31,6 +31,7 @@ add_executable(little_buddy
     src/main.cc
     src/activity_led.cc
     src/interval_override.cc
+    src/sh1107_display.cc
 )
 
 if((PICO_BOARD STREQUAL "pico") OR (PICO_BOARD STREQUAL "pico2"))
@@ -52,6 +53,7 @@ target_link_libraries(little_buddy
     hardware_pio
     hardware_dma
     hardware_flash
+    hardware_i2c
     tinyusb_device
     tinyusb_host
     tinyusb_board

@@ -3,5 +3,6 @@
 
 void activity_led_on();
 void activity_led_off();
+bool activity_led_check();
 
 #endif
