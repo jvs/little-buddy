@@ -17,8 +17,6 @@ void usb_host_init(void) {
 
 void usb_host_task(void) {
     tuh_task();
-    // Also call device task in case we need both
-    tud_task();
 }
 
 usb_event_queue_t* usb_host_get_event_queue(void) {
