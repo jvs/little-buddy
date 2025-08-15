@@ -59,7 +59,7 @@ int main() {
             sh1107_clear(&display);
             sh1107_draw_string(&display, 0, 0, "LITTLE BUDDY");
 
-            char line[21];  // 20 chars + null terminator
+            char line[32];  // Larger buffer to avoid truncation
 
             // Show USB report count for debugging
             uint32_t report_count = usb_host_get_report_count();

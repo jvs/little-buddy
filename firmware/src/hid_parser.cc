@@ -51,44 +51,44 @@ bool hid_parse_descriptor(const uint8_t* desc, uint16_t desc_len, hid_descriptor
         int32_t value = get_item_value(&desc[pos + 1], size);
         
         switch (item & 0xFC) {
-            case HID_USAGE_PAGE:
+            case ITEM_USAGE_PAGE:
                 usage_page = value;
                 break;
                 
-            case HID_USAGE:
+            case ITEM_USAGE:
                 usage = value;
                 break;
                 
-            case HID_REPORT_ID:
+            case ITEM_REPORT_ID:
                 report_id = value;
                 has_report_id = true;
                 bit_pos = has_report_id ? 8 : 0; // Account for report ID byte
                 break;
                 
-            case HID_REPORT_SIZE:
+            case ITEM_REPORT_SIZE:
                 report_size = value;
                 break;
                 
-            case HID_REPORT_COUNT:
+            case ITEM_REPORT_COUNT:
                 report_count = value;
                 break;
                 
-            case HID_LOGICAL_MINIMUM:
+            case ITEM_LOGICAL_MINIMUM:
                 logical_min = value;
                 break;
                 
-            case HID_LOGICAL_MAXIMUM:
+            case ITEM_LOGICAL_MAXIMUM:
                 logical_max = value;
                 break;
                 
-            case HID_INPUT:
+            case ITEM_INPUT:
                 // Only process input items, ignore constant bits (bit 0 set)
                 if (!(value & 0x01)) {
                     // Check if this is a usage we care about
-                    if ((usage_page == HID_USAGE_PAGE_GENERIC_DESKTOP && 
-                         (usage == HID_USAGE_X || usage == HID_USAGE_Y || usage == HID_USAGE_WHEEL)) ||
-                        (usage_page == HID_USAGE_PAGE_BUTTON) ||
-                        (usage_page == HID_USAGE_PAGE_KEYBOARD)) {
+                    if ((usage_page == USAGE_PAGE_GENERIC_DESKTOP && 
+                         (usage == USAGE_X || usage == USAGE_Y || usage == USAGE_WHEEL)) ||
+                        (usage_page == USAGE_PAGE_BUTTON) ||
+                        (usage_page == USAGE_PAGE_KEYBOARD)) {
                         
                         hid_usage_t* u = &parsed->usages[parsed->usage_count];
                         u->report_id = report_id;
@@ -111,7 +111,7 @@ bool hid_parse_descriptor(const uint8_t* desc, uint16_t desc_len, hid_descriptor
                 usage = 0;
                 break;
                 
-            case HID_COLLECTION:
+            case ITEM_COLLECTION:
                 // Reset bit position at start of new collection
                 bit_pos = has_report_id ? 8 : 0;
                 break;
@@ -127,18 +127,18 @@ input_type_t hid_get_input_type(const hid_usage_t* usage) {
     if (!usage) return INPUT_TYPE_UNKNOWN;
     
     switch (usage->usage_page) {
-        case HID_USAGE_PAGE_GENERIC_DESKTOP:
+        case USAGE_PAGE_GENERIC_DESKTOP:
             switch (usage->usage) {
-                case HID_USAGE_X: return INPUT_TYPE_MOUSE_X;
-                case HID_USAGE_Y: return INPUT_TYPE_MOUSE_Y;
-                case HID_USAGE_WHEEL: return INPUT_TYPE_MOUSE_WHEEL;
+                case USAGE_X: return INPUT_TYPE_MOUSE_X;
+                case USAGE_Y: return INPUT_TYPE_MOUSE_Y;
+                case USAGE_WHEEL: return INPUT_TYPE_MOUSE_WHEEL;
             }
             break;
             
-        case HID_USAGE_PAGE_BUTTON:
+        case USAGE_PAGE_BUTTON:
             return INPUT_TYPE_MOUSE_BUTTON;
             
-        case HID_USAGE_PAGE_KEYBOARD:
+        case USAGE_PAGE_KEYBOARD:
             if (usage->usage == 0xE0) { // Left Control
                 return INPUT_TYPE_KEYBOARD_MODIFIER;
             } else if (usage->usage >= 0x04 && usage->usage <= 0x65) {
