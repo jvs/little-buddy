@@ -30,6 +30,7 @@ endif()
 add_executable(little_buddy
     src/main.cc
     src/activity_led.cc
+    src/interval_override.cc
 )
 
 if((PICO_BOARD STREQUAL "pico") OR (PICO_BOARD STREQUAL "pico2"))
