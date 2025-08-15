@@ -43,6 +43,8 @@ int main() {
 
     debug_printf("Little Buddy starting up...\n");
     
+    uint32_t last_heartbeat = 0;
+    
     while (true) {
         // Service USB host and device
         usb_host_task();
@@ -103,6 +105,13 @@ int main() {
 
             sh1107_display(&display);
             last_display_update = now;
+        }
+
+        // Heartbeat debug every 5 seconds
+        uint32_t now_ms = to_ms_since_boot(get_absolute_time());
+        if (now_ms - last_heartbeat > 5000) {
+            debug_printf("Heartbeat: device connected=%d\n", tud_cdc_connected());
+            last_heartbeat = now_ms;
         }
 
         sleep_ms(10);  // Small delay to prevent busy waiting

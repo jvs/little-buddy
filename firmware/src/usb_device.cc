@@ -78,3 +78,4 @@ void tud_cdc_rx_cb(uint8_t itf)
     (void) itf;
     // Data received from host - we don't need to handle this for debug output
 }
+
