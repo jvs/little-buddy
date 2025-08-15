@@ -32,6 +32,8 @@ add_executable(little_buddy
     src/activity_led.cc
     src/interval_override.cc
     src/sh1107_display.cc
+    src/usb_events.cc
+    src/usb_host.cc
 )
 
 if((PICO_BOARD STREQUAL "pico") OR (PICO_BOARD STREQUAL "pico2"))
