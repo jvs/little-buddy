@@ -70,9 +70,6 @@ int main() {
                 snprintf(line, sizeof(line), "NO USB EVENTS");
                 sh1107_draw_string(&display, 0, 15, line);
             } else {
-                snprintf(line, sizeof(line), "LAST: %lu MS AGO", now - last_event.timestamp_ms);
-                sh1107_draw_string(&display, 0, 15, line);
-
                 switch (last_event.type) {
                     case USB_EVENT_MOUSE:
                         snprintf(line, sizeof(line), "MOUSE: DX=%d DY=%d",
@@ -83,10 +80,9 @@ int main() {
                         break;
 
                     case USB_EVENT_KEYBOARD:
-                        snprintf(line, sizeof(line), "KBD: KEY=%02X", last_event.data.keyboard.keycode);
-                        sh1107_draw_string(&display, 0, 30, line);
-                        snprintf(line, sizeof(line), "MOD: %02X", last_event.data.keyboard.modifier);
-                        sh1107_draw_string(&display, 0, 45, line);
+                        snprintf(line, sizeof(line), "RAW: %02X %02X", 
+                                last_event.data.keyboard.keycode, last_event.data.keyboard.modifier);
+                        sh1107_draw_string(&display, 0, 15, line);
                         break;
 
                     case USB_EVENT_DEVICE_CONNECTED:

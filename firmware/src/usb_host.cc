@@ -106,6 +106,15 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
         }
         
         default:
+            // Handle generic HID reports (non-boot protocol)
+            // For debugging, let's create a generic event showing raw data
+            if (len > 0) {
+                event.type = USB_EVENT_KEYBOARD; // Treat as keyboard for now
+                event.data.keyboard.keycode = report[0]; // Show first byte
+                event.data.keyboard.modifier = (len > 1) ? report[1] : 0; // Show second byte
+                event.data.keyboard.pressed = true;
+                usb_event_queue_push(&g_event_queue, &event);
+            }
             break;
     }
     
