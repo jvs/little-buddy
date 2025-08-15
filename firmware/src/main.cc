@@ -75,7 +75,7 @@ int main() {
                         snprintf(line, sizeof(line), "MOUSE DX=%d DY=%d",
                                 last_event.data.mouse.delta_x, last_event.data.mouse.delta_y);
                         sh1107_draw_string(&display, 0, 15, line);
-                        snprintf(line, sizeof(line), "BTNS=0X%02X", last_event.data.mouse.buttons);
+                        snprintf(line, sizeof(line), "BTNS=%02X", last_event.data.mouse.buttons);
                         sh1107_draw_string(&display, 0, 30, line);
                         break;
 

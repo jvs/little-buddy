@@ -122,37 +122,63 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
                 // Report ID 2: Mouse data  
                 // Report ID 0: May be keyboard without report ID
                 
-                if (report_id == 1 || (report_id == 0 && len >= 8)) {
-                    // Likely keyboard report
-                    // Standard keyboard report: [modifier, reserved, key1, key2, key3, key4, key5, key6]
-                    uint8_t modifier = (report_id == 1) ? report[1] : report[0];
-                    uint8_t keycode = (report_id == 1) ? report[3] : report[2];
+                // TrackPoint keyboard analysis based on your observations:
+                // Mouse buttons appear as: KEY=00 MOD=01/02/04 (mouse buttons in modifier field)
+                // Mouse movement appears as: KEY=xx MOD=00 (movement data in keycode field)
+                // Keyboard keys appear as: MOUSE DX=keycode DY=0 BTNS=00 (keyboard data in mouse fields)
+                
+                if (len >= 8) {
+                    // 8-byte report - likely keyboard format but contains both keyboard and mouse data
+                    uint8_t modifier = report[0];
+                    uint8_t keycode = report[2]; // Skip reserved byte
                     
-                    if (modifier != 0 || keycode != 0) {
+                    // Check if this is mouse data disguised as keyboard data
+                    if (keycode == 0 && modifier != 0) {
+                        // Mouse buttons: modifier field contains button bits
+                        event.type = USB_EVENT_MOUSE;
+                        event.data.mouse.buttons = modifier;
+                        event.data.mouse.delta_x = 0;
+                        event.data.mouse.delta_y = 0;
+                        event.data.mouse.scroll = 0;
+                        usb_event_queue_push(&g_event_queue, &event);
+                    } else if (keycode != 0 && modifier == 0) {
+                        // Mouse movement: keycode field contains movement data
+                        event.type = USB_EVENT_MOUSE;
+                        event.data.mouse.buttons = 0;
+                        event.data.mouse.delta_x = (int8_t)keycode; // Movement in keycode field
+                        event.data.mouse.delta_y = (len > 3) ? (int8_t)report[3] : 0; // Y movement might be in next byte
+                        event.data.mouse.scroll = 0;
+                        usb_event_queue_push(&g_event_queue, &event);
+                    } else if (keycode != 0 && modifier != 0) {
+                        // Real keyboard data with modifier
                         event.type = USB_EVENT_KEYBOARD;
                         event.data.keyboard.modifier = modifier;
                         event.data.keyboard.keycode = keycode;
                         event.data.keyboard.pressed = true;
                         usb_event_queue_push(&g_event_queue, &event);
                     }
-                } else if (report_id == 2 || (len >= 3 && len <= 5)) {
-                    // Likely mouse report
-                    // Standard mouse report: [buttons, x, y, wheel]
-                    uint8_t offset = (report_id == 2) ? 1 : 0;
-                    if (len > offset + 2) {
-                        uint8_t buttons = report[offset];
-                        int8_t delta_x = (int8_t)report[offset + 1];
-                        int8_t delta_y = (int8_t)report[offset + 2];
-                        int8_t wheel = (len > offset + 3) ? (int8_t)report[offset + 3] : 0;
-                        
-                        if (buttons != 0 || delta_x != 0 || delta_y != 0 || wheel != 0) {
-                            event.type = USB_EVENT_MOUSE;
-                            event.data.mouse.buttons = buttons;
-                            event.data.mouse.delta_x = delta_x;
-                            event.data.mouse.delta_y = delta_y;
-                            event.data.mouse.scroll = wheel;
-                            usb_event_queue_push(&g_event_queue, &event);
-                        }
+                } else if (len >= 3) {
+                    // Shorter report - check if this is keyboard data disguised as mouse data
+                    // Based on your observation: Shift+A shows as "MOUSE DX=4 DY=0"
+                    uint8_t buttons = report[0];
+                    int8_t delta_x = (int8_t)report[1];
+                    int8_t delta_y = (len > 2) ? (int8_t)report[2] : 0;
+                    
+                    if (buttons == 0 && delta_y == 0 && delta_x > 0 && delta_x < 50) {
+                        // Likely keyboard data: DX contains keycode, DY is 0
+                        event.type = USB_EVENT_KEYBOARD;
+                        event.data.keyboard.keycode = delta_x;
+                        event.data.keyboard.modifier = 0; // Modifier might be in separate report
+                        event.data.keyboard.pressed = true;
+                        usb_event_queue_push(&g_event_queue, &event);
+                    } else if (buttons != 0 || delta_x != 0 || delta_y != 0) {
+                        // Real mouse data
+                        event.type = USB_EVENT_MOUSE;
+                        event.data.mouse.buttons = buttons;
+                        event.data.mouse.delta_x = delta_x;
+                        event.data.mouse.delta_y = delta_y;
+                        event.data.mouse.scroll = 0;
+                        usb_event_queue_push(&g_event_queue, &event);
                     }
                 } else {
                     // Unknown report type - show raw data for debugging
