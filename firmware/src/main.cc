@@ -9,9 +9,9 @@ int main() {
 
     while (true) {
         activity_led_on();
-        sleep_ms(60000);
-        activity_led_off_maybe();
-        sleep_ms(10000);
+        sleep_ms(2 * 1000);
+        activity_led_off();
+        sleep_ms(1 * 1000);
     }
 
     return 0;
