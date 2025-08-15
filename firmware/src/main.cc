@@ -1,6 +1,8 @@
 #include <bsp/board_api.h>
 #include <pico/time.h>
 
+#include "activity_led.h"
+
 
 int main() {
     board_init();
