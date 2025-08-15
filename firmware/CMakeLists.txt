@@ -34,6 +34,7 @@ add_executable(little_buddy
     src/sh1107_display.cc
     src/usb_events.cc
     src/usb_host.cc
+    src/hid_parser.cc
 )
 
 if((PICO_BOARD STREQUAL "pico") OR (PICO_BOARD STREQUAL "pico2"))
