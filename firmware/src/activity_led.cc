@@ -10,7 +10,7 @@ void activity_led_on() {
     board_led_write(true);
 }
 
-void activity_led_off_maybe() {
+void activity_led_off() {
     led_state = false;
     board_led_write(false);
 }
