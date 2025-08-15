@@ -24,8 +24,8 @@ int main() {
     // Show startup message
     if (display_ok) {
         sh1107_clear(&display);
-        sh1107_draw_string(&display, 10, 10, "Little Buddy");
-        sh1107_draw_string(&display, 10, 25, "Starting...");
+        sh1107_draw_string(&display, 10, 10, "LITTLE BUDDY");
+        sh1107_draw_string(&display, 10, 25, "STARTING...");
         sh1107_display(&display);
     }
 
@@ -36,10 +36,10 @@ int main() {
         // Update display with counter if working
         if (display_ok) {
             sh1107_clear(&display);
-            sh1107_draw_string(&display, 10, 10, "Little Buddy");
+            sh1107_draw_string(&display, 10, 10, "LITTLE BUDDY");
             
             char count_str[16];
-            snprintf(count_str, sizeof(count_str), "Count: %d", counter);
+            snprintf(count_str, sizeof(count_str), "COUNT: %d", counter);
             sh1107_draw_string(&display, 10, 30, count_str);
             
             sh1107_display(&display);
