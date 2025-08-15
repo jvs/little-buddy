@@ -1,6 +1,22 @@
 #include "tusb.h"
 
 //--------------------------------------------------------------------+
+// HID Report Descriptors
+//--------------------------------------------------------------------+
+
+// Standard HID Keyboard Report Descriptor
+uint8_t const desc_hid_keyboard_report[] =
+{
+  TUD_HID_REPORT_DESC_KEYBOARD()
+};
+
+// Standard HID Mouse Report Descriptor  
+uint8_t const desc_hid_mouse_report[] =
+{
+  TUD_HID_REPORT_DESC_MOUSE()
+};
+
+//--------------------------------------------------------------------+
 // Device Descriptors
 //--------------------------------------------------------------------+
 tusb_desc_device_t const desc_device =
@@ -39,14 +55,18 @@ enum
 {
   ITF_NUM_CDC = 0,
   ITF_NUM_CDC_DATA,
+  ITF_NUM_HID_KEYBOARD,
+  ITF_NUM_HID_MOUSE,
   ITF_NUM_TOTAL
 };
 
-#define CONFIG_TOTAL_LEN  (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN)
+#define CONFIG_TOTAL_LEN  (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN + TUD_HID_DESC_LEN + TUD_HID_DESC_LEN)
 
 #define EPNUM_CDC_NOTIF   0x81
 #define EPNUM_CDC_OUT     0x02
 #define EPNUM_CDC_IN      0x82
+#define EPNUM_HID_KEYBOARD 0x83
+#define EPNUM_HID_MOUSE   0x84
 
 uint8_t const desc_fs_configuration[] =
 {
@@ -55,6 +75,12 @@ uint8_t const desc_fs_configuration[] =
 
   // CDC: Interface number, string index, EP notification address and size, EP data address (out, in) and size.
   TUD_CDC_DESCRIPTOR(ITF_NUM_CDC, 4, EPNUM_CDC_NOTIF, 8, EPNUM_CDC_OUT, EPNUM_CDC_IN, 64),
+
+  // HID Keyboard: Interface number, string index, protocol, report descriptor len, EP In address, size & polling interval
+  TUD_HID_DESCRIPTOR(ITF_NUM_HID_KEYBOARD, 5, HID_ITF_PROTOCOL_KEYBOARD, sizeof(desc_hid_keyboard_report), EPNUM_HID_KEYBOARD, CFG_TUD_HID_EP_BUFSIZE, 1),
+
+  // HID Mouse: Interface number, string index, protocol, report descriptor len, EP In address, size & polling interval  
+  TUD_HID_DESCRIPTOR(ITF_NUM_HID_MOUSE, 6, HID_ITF_PROTOCOL_MOUSE, sizeof(desc_hid_mouse_report), EPNUM_HID_MOUSE, CFG_TUD_HID_EP_BUFSIZE, 1),
 };
 
 // Invoked when received GET CONFIGURATION DESCRIPTOR
@@ -77,6 +103,8 @@ enum {
   STRID_PRODUCT,
   STRID_SERIAL,
   STRID_CDC_INTERFACE,
+  STRID_HID_KEYBOARD,
+  STRID_HID_MOUSE,
 };
 
 // array of pointer to string descriptors
@@ -87,6 +115,8 @@ char const* string_desc_arr [] =
   "Little Buddy USB Host",            // 2: Product
   "123456",                      // 3: Serials, should use chip ID
   "Little Buddy CDC",            // 4: CDC Interface
+  "Little Buddy Keyboard",       // 5: HID Keyboard
+  "Little Buddy Mouse",          // 6: HID Mouse
 };
 
 static uint16_t _desc_str[32];
@@ -127,4 +157,25 @@ uint16_t const* tud_descriptor_string_cb(uint8_t index, uint16_t langid)
   _desc_str[0] = (TUSB_DESC_STRING << 8 ) | (2*chr_count + 2);
 
   return _desc_str;
+}
+
+//--------------------------------------------------------------------+
+// HID Report Descriptor Callbacks
+//--------------------------------------------------------------------+
+
+// Invoked when received GET HID REPORT DESCRIPTOR
+// Application return pointer to descriptor
+// Descriptor contents must exist long enough for transfer to complete
+uint8_t const * tud_hid_descriptor_report_cb(uint8_t itf)
+{
+  if (itf == ITF_NUM_HID_KEYBOARD)
+  {
+    return desc_hid_keyboard_report;
+  }
+  else if (itf == ITF_NUM_HID_MOUSE)
+  {
+    return desc_hid_mouse_report;
+  }
+  
+  return NULL;
 }

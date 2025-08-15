@@ -3,6 +3,11 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+// Interface numbers (must match usb_descriptors.c)
+#define ITF_NUM_CDC_DATA      1
+#define ITF_NUM_HID_KEYBOARD  2  
+#define ITF_NUM_HID_MOUSE     3
+
 static char printf_buffer[256];
 
 // Custom printf that outputs to USB CDC
@@ -58,6 +63,37 @@ void tud_resume_cb(void)
 }
 
 //--------------------------------------------------------------------+
+// USB HID
+//--------------------------------------------------------------------+
+
+// Invoked when received GET_REPORT control request
+// Application must fill buffer report's content and return its length.
+// Return zero will cause the stack to STALL request
+uint16_t tud_hid_get_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t report_type, uint8_t* buffer, uint16_t reqlen)
+{
+    // TODO implement if needed
+    (void) itf;
+    (void) report_id;
+    (void) report_type;
+    (void) buffer;
+    (void) reqlen;
+
+    return 0;
+}
+
+// Invoked when received SET_REPORT control request or
+// received data on OUT endpoint ( Report ID = 0, Type = 0 )
+void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t report_type, uint8_t const* buffer, uint16_t bufsize)
+{
+    // TODO implement if needed for LEDs, etc.
+    (void) itf;
+    (void) report_id;
+    (void) report_type;
+    (void) buffer;
+    (void) bufsize;
+}
+
+//--------------------------------------------------------------------+
 // USB CDC
 //--------------------------------------------------------------------+
 void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts)
@@ -77,5 +113,35 @@ void tud_cdc_rx_cb(uint8_t itf)
 {
     (void) itf;
     // Data received from host - we don't need to handle this for debug output
+}
+
+//--------------------------------------------------------------------+
+// HID Report Sending Functions
+//--------------------------------------------------------------------+
+
+bool usb_device_send_keyboard_report(uint8_t modifier, uint8_t keycode) {
+    // Standard HID keyboard report: [modifier, reserved, keycode1, keycode2, keycode3, keycode4, keycode5, keycode6]
+    uint8_t report[8] = {0};
+    report[0] = modifier;
+    report[2] = keycode;  // Put keycode in first slot
+    
+    if (tud_hid_n_ready(ITF_NUM_HID_KEYBOARD)) {
+        return tud_hid_n_report(ITF_NUM_HID_KEYBOARD, 0, report, sizeof(report));
+    }
+    return false;
+}
+
+bool usb_device_send_mouse_report(uint8_t buttons, int8_t delta_x, int8_t delta_y, int8_t scroll) {
+    // Standard HID mouse report: [buttons, x, y, wheel]
+    uint8_t report[4] = {0};
+    report[0] = buttons;
+    report[1] = (uint8_t)delta_x;
+    report[2] = (uint8_t)delta_y;
+    report[3] = (uint8_t)scroll;
+    
+    if (tud_hid_n_ready(ITF_NUM_HID_MOUSE)) {
+        return tud_hid_n_report(ITF_NUM_HID_MOUSE, 0, report, sizeof(report));
+    }
+    return false;
 }
 

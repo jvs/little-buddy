@@ -57,6 +57,23 @@ int main() {
         while (usb_event_queue_pop(queue, &event)) {
             last_event = event;
             activity_led_on();
+            
+            // Forward events to USB device (computer)
+            switch (event.type) {
+                case USB_EVENT_KEYBOARD:
+                    usb_device_send_keyboard_report(event.data.keyboard.modifier, event.data.keyboard.keycode);
+                    debug_printf("FWD KBD: K=%02X M=%02X\n", event.data.keyboard.keycode, event.data.keyboard.modifier);
+                    break;
+                    
+                case USB_EVENT_MOUSE:
+                    usb_device_send_mouse_report(event.data.mouse.buttons, event.data.mouse.delta_x, event.data.mouse.delta_y, event.data.mouse.scroll);
+                    debug_printf("FWD MSE: B=%02X DX=%d DY=%d\n", event.data.mouse.buttons, event.data.mouse.delta_x, event.data.mouse.delta_y);
+                    break;
+                    
+                default:
+                    break;
+            }
+            
             sleep_ms(50);  // Brief flash
             activity_led_off();
         }
@@ -112,20 +129,25 @@ int main() {
                 sh1107_draw_string(&display, 0, 60, "---- L0");
             }
             
-            // Show last parsed event on a separate line
+            // Show forwarding status
+            bool hid_ready = tud_hid_n_ready(2) && tud_hid_n_ready(3);  // Both keyboard and mouse interfaces
+            snprintf(line, sizeof(line), "FWD: %s", hid_ready ? "READY" : "WAIT");
+            sh1107_draw_string(&display, 0, 75, line);
+            
+            // Show last parsed event on a separate line  
             if (last_event.type != USB_EVENT_NONE) {
                 switch (last_event.type) {
                     case USB_EVENT_MOUSE:
                         snprintf(line, sizeof(line), "MSE: DX=%d DY=%d B=%d",
                                 last_event.data.mouse.delta_x, last_event.data.mouse.delta_y, 
                                 last_event.data.mouse.buttons);
-                        sh1107_draw_string(&display, 0, 75, line);
+                        sh1107_draw_string(&display, 0, 90, line);
                         break;
 
                     case USB_EVENT_KEYBOARD:
                         snprintf(line, sizeof(line), "KBD: K=%02X M=%02X", 
                                 last_event.data.keyboard.keycode, last_event.data.keyboard.modifier);
-                        sh1107_draw_string(&display, 0, 75, line);
+                        sh1107_draw_string(&display, 0, 90, line);
                         break;
 
                     default:
