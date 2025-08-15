@@ -34,7 +34,9 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
     event.data.device.device_address = dev_addr;
     event.data.device.instance = instance;
     
-    const char* protocol_str[] = { "NONE", "KEYBOARD", "MOUSE" };
+    // For composite devices like TrackPoint, protocol will be NONE
+    // but we can still process the reports
+    const char* protocol_str[] = { "COMPOSITE", "KEYBOARD", "MOUSE" };
     if (itf_protocol < 3) {
         event.data.device.device_type = protocol_str[itf_protocol];
     } else {
@@ -43,7 +45,11 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
     
     usb_event_queue_push(&g_event_queue, &event);
     
-    // Debug: device mounted
+    // Parse HID descriptor if available
+    if (desc_report && desc_len > 0) {
+        // For now, we'll handle reports dynamically based on their content
+        // Future: could parse descriptor to understand report structure
+    }
     
     tuh_hid_receive_report(dev_addr, instance);
 }
@@ -106,14 +112,56 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
         }
         
         default:
-            // Handle generic HID reports (non-boot protocol)
-            // For debugging, let's create a generic event showing raw data
+            // Handle composite device reports (like TrackPoint keyboard)
             if (len > 0) {
-                event.type = USB_EVENT_KEYBOARD; // Treat as keyboard for now
-                event.data.keyboard.keycode = report[0]; // Show first byte
-                event.data.keyboard.modifier = (len > 1) ? report[1] : 0; // Show second byte
-                event.data.keyboard.pressed = true;
-                usb_event_queue_push(&g_event_queue, &event);
+                // Try to detect report type based on content patterns
+                uint8_t report_id = report[0];
+                
+                // TrackPoint keyboards typically use different report IDs:
+                // Report ID 1: Keyboard data
+                // Report ID 2: Mouse data  
+                // Report ID 0: May be keyboard without report ID
+                
+                if (report_id == 1 || (report_id == 0 && len >= 8)) {
+                    // Likely keyboard report
+                    // Standard keyboard report: [modifier, reserved, key1, key2, key3, key4, key5, key6]
+                    uint8_t modifier = (report_id == 1) ? report[1] : report[0];
+                    uint8_t keycode = (report_id == 1) ? report[3] : report[2];
+                    
+                    if (modifier != 0 || keycode != 0) {
+                        event.type = USB_EVENT_KEYBOARD;
+                        event.data.keyboard.modifier = modifier;
+                        event.data.keyboard.keycode = keycode;
+                        event.data.keyboard.pressed = true;
+                        usb_event_queue_push(&g_event_queue, &event);
+                    }
+                } else if (report_id == 2 || (len >= 3 && len <= 5)) {
+                    // Likely mouse report
+                    // Standard mouse report: [buttons, x, y, wheel]
+                    uint8_t offset = (report_id == 2) ? 1 : 0;
+                    if (len > offset + 2) {
+                        uint8_t buttons = report[offset];
+                        int8_t delta_x = (int8_t)report[offset + 1];
+                        int8_t delta_y = (int8_t)report[offset + 2];
+                        int8_t wheel = (len > offset + 3) ? (int8_t)report[offset + 3] : 0;
+                        
+                        if (buttons != 0 || delta_x != 0 || delta_y != 0 || wheel != 0) {
+                            event.type = USB_EVENT_MOUSE;
+                            event.data.mouse.buttons = buttons;
+                            event.data.mouse.delta_x = delta_x;
+                            event.data.mouse.delta_y = delta_y;
+                            event.data.mouse.scroll = wheel;
+                            usb_event_queue_push(&g_event_queue, &event);
+                        }
+                    }
+                } else {
+                    // Unknown report type - show raw data for debugging
+                    event.type = USB_EVENT_KEYBOARD;
+                    event.data.keyboard.keycode = report[0];
+                    event.data.keyboard.modifier = (len > 1) ? report[1] : 0;
+                    event.data.keyboard.pressed = true;
+                    usb_event_queue_push(&g_event_queue, &event);
+                }
             }
             break;
     }

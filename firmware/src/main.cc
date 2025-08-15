@@ -72,15 +72,15 @@ int main() {
             } else {
                 switch (last_event.type) {
                     case USB_EVENT_MOUSE:
-                        snprintf(line, sizeof(line), "MOUSE: DX=%d DY=%d",
+                        snprintf(line, sizeof(line), "MOUSE DX=%d DY=%d",
                                 last_event.data.mouse.delta_x, last_event.data.mouse.delta_y);
+                        sh1107_draw_string(&display, 0, 15, line);
+                        snprintf(line, sizeof(line), "BTNS=0X%02X", last_event.data.mouse.buttons);
                         sh1107_draw_string(&display, 0, 30, line);
-                        snprintf(line, sizeof(line), "BTNS: 0x%02X", last_event.data.mouse.buttons);
-                        sh1107_draw_string(&display, 0, 45, line);
                         break;
 
                     case USB_EVENT_KEYBOARD:
-                        snprintf(line, sizeof(line), "RAW: %02X %02X", 
+                        snprintf(line, sizeof(line), "KEY=%02X MOD=%02X", 
                                 last_event.data.keyboard.keycode, last_event.data.keyboard.modifier);
                         sh1107_draw_string(&display, 0, 15, line);
                         break;
