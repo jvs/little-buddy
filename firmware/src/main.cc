@@ -61,6 +61,11 @@ int main() {
 
             char line[21];  // 20 chars + null terminator
 
+            // Show USB report count for debugging
+            uint32_t report_count = usb_host_get_report_count();
+            snprintf(line, sizeof(line), "REPORTS: %lu", report_count);
+            sh1107_draw_string(&display, 0, 60, line);
+
             if (last_event.type == USB_EVENT_NONE) {
                 snprintf(line, sizeof(line), "NO USB EVENTS");
                 sh1107_draw_string(&display, 0, 15, line);
