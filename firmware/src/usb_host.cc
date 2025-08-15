@@ -7,6 +7,7 @@
 
 static usb_event_queue_t g_event_queue;
 static uint32_t g_report_count = 0;
+static uint32_t g_mount_count = 0;
 static hid_descriptor_t g_hid_descriptors[CFG_TUH_HID] = {0};
 
 void usb_host_init(void) {
@@ -16,6 +17,8 @@ void usb_host_init(void) {
 
 void usb_host_task(void) {
     tuh_task();
+    // Also call device task in case we need both
+    tud_task();
 }
 
 usb_event_queue_t* usb_host_get_event_queue(void) {
@@ -26,8 +29,13 @@ uint32_t usb_host_get_report_count(void) {
     return g_report_count;
 }
 
+uint32_t usb_host_get_mount_count(void) {
+    return g_mount_count;
+}
+
 // TinyUSB callbacks
 void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_report, uint16_t desc_len) {
+    g_mount_count++;  // Track mount calls
     uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
     
     usb_event_t event;
@@ -60,7 +68,18 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
     
     usb_event_queue_push(&g_event_queue, &event);
     
-    tuh_hid_receive_report(dev_addr, instance);
+    // Request first report
+    if (!tuh_hid_receive_report(dev_addr, instance)) {
+        // If this fails, we won't get any reports
+        // Create a debug event to show the failure
+        usb_event_t debug_event;
+        debug_event.type = USB_EVENT_KEYBOARD;
+        debug_event.timestamp_ms = to_ms_since_boot(get_absolute_time());
+        debug_event.data.keyboard.keycode = 0xFF; // Special code to indicate error
+        debug_event.data.keyboard.modifier = 0xFF;
+        debug_event.data.keyboard.pressed = true;
+        usb_event_queue_push(&g_event_queue, &debug_event);
+    }
 }
 
 void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {

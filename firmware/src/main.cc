@@ -61,10 +61,13 @@ int main() {
 
             char line[32];  // Larger buffer to avoid truncation
 
-            // Show USB report count for debugging
+            // Show USB report and mount counts for debugging
             uint32_t report_count = usb_host_get_report_count();
+            uint32_t mount_count = usb_host_get_mount_count();
             snprintf(line, sizeof(line), "REPORTS: %lu", report_count);
             sh1107_draw_string(&display, 0, 60, line);
+            snprintf(line, sizeof(line), "MOUNTS: %lu", mount_count);
+            sh1107_draw_string(&display, 0, 75, line);
 
             if (last_event.type == USB_EVENT_NONE) {
                 snprintf(line, sizeof(line), "NO USB EVENTS");
