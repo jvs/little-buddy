@@ -15,7 +15,7 @@ static uint8_t g_interface_protocols[CFG_TUH_HID] = {0}; // Track each interface
 
 void usb_host_init(void) {
     usb_event_queue_init(&g_event_queue);
-    tuh_init(BOARD_TUH_RHPORT);
+    // Don't init here - will be done by unified tusb_init()
 }
 
 void usb_host_task(void) {

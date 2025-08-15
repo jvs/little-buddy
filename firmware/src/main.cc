@@ -25,9 +25,10 @@ int main() {
     sh1107_t display;
     bool display_ok = sh1107_init(&display, i2c1);
 
-    // Initialize USB host and device
-    usb_host_init();
-    usb_device_init();
+    // Initialize USB (both host and device)
+    usb_host_init();  // Just init event queue
+    usb_device_init(); // Just setup
+    tusb_init();       // Unified TinyUSB init
 
     // Show startup message
     if (display_ok) {

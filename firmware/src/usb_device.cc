@@ -21,7 +21,7 @@ int debug_printf(const char* format, ...) {
 }
 
 void usb_device_init(void) {
-    tud_init(BOARD_TUD_RHPORT);
+    // Don't init here - will be done by unified tusb_init()
 }
 
 void usb_device_task(void) {
