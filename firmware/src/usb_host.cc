@@ -8,7 +8,9 @@
 static usb_event_queue_t g_event_queue;
 static uint32_t g_report_count = 0;
 static uint32_t g_mount_count = 0;
+static uint32_t g_sequence_counter = 0;
 static hid_descriptor_t g_hid_descriptors[CFG_TUH_HID] = {0};
+static uint8_t g_interface_protocols[CFG_TUH_HID] = {0}; // Track each interface's protocol
 
 void usb_host_init(void) {
     usb_event_queue_init(&g_event_queue);
@@ -31,14 +33,33 @@ uint32_t usb_host_get_mount_count(void) {
     return g_mount_count;
 }
 
+const char* usb_host_get_interface_info(uint8_t instance) {
+    if (instance >= CFG_TUH_HID) return "INVALID";
+    
+    static const char* protocol_names[] = { "COMPOSITE", "KEYBOARD", "MOUSE" };
+    uint8_t protocol = g_interface_protocols[instance];
+    
+    if (protocol < 3) {
+        return protocol_names[protocol];
+    }
+    return "UNKNOWN";
+}
+
 // TinyUSB callbacks
 void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_report, uint16_t desc_len) {
     g_mount_count++;  // Track mount calls
     uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
     
+    // Store protocol for this interface
+    if (instance < CFG_TUH_HID) {
+        g_interface_protocols[instance] = itf_protocol;
+    }
+    
     usb_event_t event;
     event.type = USB_EVENT_DEVICE_CONNECTED;
     event.timestamp_ms = to_ms_since_boot(get_absolute_time());
+    event.sequence_id = g_sequence_counter++;
+    event.interface_id = instance;
     event.data.device.device_address = dev_addr;
     event.data.device.instance = instance;
     
@@ -73,6 +94,8 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
         usb_event_t debug_event;
         debug_event.type = USB_EVENT_KEYBOARD;
         debug_event.timestamp_ms = to_ms_since_boot(get_absolute_time());
+        debug_event.sequence_id = g_sequence_counter++;
+        debug_event.interface_id = instance;
         debug_event.data.keyboard.keycode = 0xFF; // Special code to indicate error
         debug_event.data.keyboard.modifier = 0xFF;
         debug_event.data.keyboard.pressed = true;
@@ -84,6 +107,8 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
     usb_event_t event;
     event.type = USB_EVENT_DEVICE_DISCONNECTED;
     event.timestamp_ms = to_ms_since_boot(get_absolute_time());
+    event.sequence_id = g_sequence_counter++;
+    event.interface_id = instance;
     event.data.device.device_address = dev_addr;
     event.data.device.instance = instance;
     event.data.device.device_type = "UNKNOWN";
@@ -96,10 +121,13 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
 void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len) {
     g_report_count++;  // Count all USB reports received
     
-    uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
+    // Use stored protocol for this interface
+    uint8_t const itf_protocol = (instance < CFG_TUH_HID) ? g_interface_protocols[instance] : HID_ITF_PROTOCOL_NONE;
     
     usb_event_t event;
     event.timestamp_ms = to_ms_since_boot(get_absolute_time());
+    event.sequence_id = g_sequence_counter++;
+    event.interface_id = instance;
     
     switch (itf_protocol) {
         case HID_ITF_PROTOCOL_MOUSE: {

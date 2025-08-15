@@ -69,35 +69,25 @@ int main() {
             snprintf(line, sizeof(line), "MOUNTS: %lu", mount_count);
             sh1107_draw_string(&display, 0, 75, line);
 
-            if (last_event.type == USB_EVENT_NONE) {
-                snprintf(line, sizeof(line), "NO USB EVENTS");
-                sh1107_draw_string(&display, 0, 15, line);
-            } else {
+            // Show interface information
+            snprintf(line, sizeof(line), "IF0: %s", usb_host_get_interface_info(0));
+            sh1107_draw_string(&display, 0, 15, line);
+            snprintf(line, sizeof(line), "IF1: %s", usb_host_get_interface_info(1));
+            sh1107_draw_string(&display, 0, 30, line);
+            
+            // Show last event with interface info
+            if (last_event.type != USB_EVENT_NONE) {
                 switch (last_event.type) {
                     case USB_EVENT_MOUSE:
-                        snprintf(line, sizeof(line), "MOUSE DX=%d DY=%d",
-                                last_event.data.mouse.delta_x, last_event.data.mouse.delta_y);
-                        sh1107_draw_string(&display, 0, 15, line);
-                        snprintf(line, sizeof(line), "BTNS=%02X", last_event.data.mouse.buttons);
-                        sh1107_draw_string(&display, 0, 30, line);
-                        break;
-
-                    case USB_EVENT_KEYBOARD:
-                        snprintf(line, sizeof(line), "KEY=%02X MOD=%02X", 
-                                last_event.data.keyboard.keycode, last_event.data.keyboard.modifier);
-                        sh1107_draw_string(&display, 0, 15, line);
-                        break;
-
-                    case USB_EVENT_DEVICE_CONNECTED:
-                        snprintf(line, sizeof(line), "CONNECTED:");
-                        sh1107_draw_string(&display, 0, 30, line);
-                        snprintf(line, sizeof(line), "%s", last_event.data.device.device_type);
+                        snprintf(line, sizeof(line), "IF%d MOUSE DX=%d DY=%d",
+                                last_event.interface_id, last_event.data.mouse.delta_x, last_event.data.mouse.delta_y);
                         sh1107_draw_string(&display, 0, 45, line);
                         break;
 
-                    case USB_EVENT_DEVICE_DISCONNECTED:
-                        snprintf(line, sizeof(line), "DISCONNECTED");
-                        sh1107_draw_string(&display, 0, 30, line);
+                    case USB_EVENT_KEYBOARD:
+                        snprintf(line, sizeof(line), "IF%d KEY=%02X MOD=%02X", 
+                                last_event.interface_id, last_event.data.keyboard.keycode, last_event.data.keyboard.modifier);
+                        sh1107_draw_string(&display, 0, 45, line);
                         break;
 
                     default:

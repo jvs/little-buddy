@@ -34,6 +34,8 @@ typedef struct {
 typedef struct {
     usb_event_type_t type;
     uint32_t timestamp_ms;
+    uint32_t sequence_id;      // Event sequence number
+    uint8_t interface_id;      // Which HID interface (0, 1, etc.)
     union {
         usb_mouse_data_t mouse;
         usb_keyboard_data_t keyboard;
