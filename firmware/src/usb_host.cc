@@ -12,6 +12,7 @@ static uint32_t g_mount_count = 0;
 static uint32_t g_sequence_counter = 0;
 static hid_descriptor_t g_hid_descriptors[CFG_TUH_HID] = {0};
 static uint8_t g_interface_protocols[CFG_TUH_HID] = {0}; // Track each interface's protocol
+static last_report_t g_last_reports[CFG_TUH_HID] = {0}; // Track last report from each interface
 
 void usb_host_init(void) {
     usb_event_queue_init(&g_event_queue);
@@ -44,6 +45,11 @@ const char* usb_host_get_interface_info(uint8_t instance) {
         return protocol_names[protocol];
     }
     return "UNKNOWN";
+}
+
+const last_report_t* usb_host_get_last_report(uint8_t instance) {
+    if (instance >= CFG_TUH_HID) return NULL;
+    return &g_last_reports[instance];
 }
 
 // TinyUSB callbacks
@@ -126,6 +132,15 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
 
 void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len) {
     g_report_count++;  // Count all USB reports received
+    
+    // Store raw report data for display debugging
+    if (instance < CFG_TUH_HID) {
+        g_last_reports[instance].length = (len > 16) ? 16 : len;
+        g_last_reports[instance].timestamp_ms = to_ms_since_boot(get_absolute_time());
+        for (int i = 0; i < g_last_reports[instance].length; i++) {
+            g_last_reports[instance].data[i] = report[i];
+        }
+    }
     
     // Use stored protocol for this interface
     uint8_t const itf_protocol = (instance < CFG_TUH_HID) ? g_interface_protocols[instance] : HID_ITF_PROTOCOL_NONE;
