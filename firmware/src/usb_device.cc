@@ -7,6 +7,10 @@
 #define ITF_NUM_HID_KEYBOARD  0  
 #define ITF_NUM_HID_MOUSE     1
 
+// Report IDs (must match usb_descriptors.c)
+#define REPORT_ID_MOUSE 1
+#define REPORT_ID_KEYBOARD 2
+
 // Debug printf - now just a stub since no CDC
 int debug_printf(const char* format, ...) {
     // CDC removed - debug output disabled
@@ -89,27 +93,48 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t rep
 //--------------------------------------------------------------------+
 
 bool usb_device_send_keyboard_report(uint8_t modifier, uint8_t keycode) {
-    // Standard HID keyboard report: [modifier, reserved, keycode1, keycode2, keycode3, keycode4, keycode5, keycode6]
-    uint8_t report[8] = {0};
-    report[0] = modifier;
-    report[2] = keycode;  // Put keycode in first slot
+    // Custom keyboard report with Report ID (matching hid-remapper format)
+    // Based on hid-remapper descriptor: 1 byte modifier + 112 bits (14 bytes) for keys + 5 bits + 2 bits + 1 bit padding
+    uint8_t report[17] = {0};  // 1 + 1 + 14 + 1 = 17 bytes total
+    report[0] = REPORT_ID_KEYBOARD;
+    report[1] = modifier;  // Modifier byte
+    
+    // Set keycode bit in the 112-bit array (14 bytes)
+    if (keycode >= 0x04 && keycode <= 0x73) {
+        uint8_t bit_index = keycode - 0x04;
+        uint8_t byte_index = 2 + (bit_index / 8);
+        uint8_t bit_offset = bit_index % 8;
+        report[byte_index] |= (1 << bit_offset);
+    }
     
     if (tud_hid_n_ready(ITF_NUM_HID_KEYBOARD)) {
-        return tud_hid_n_report(ITF_NUM_HID_KEYBOARD, 0, report, sizeof(report));
+        return tud_hid_n_report(ITF_NUM_HID_KEYBOARD, REPORT_ID_KEYBOARD, report, sizeof(report));
     }
     return false;
 }
 
 bool usb_device_send_mouse_report(uint8_t buttons, int8_t delta_x, int8_t delta_y, int8_t scroll) {
-    // Standard HID mouse report: [buttons, x, y, wheel]
-    uint8_t report[4] = {0};
-    report[0] = buttons;
-    report[1] = (uint8_t)delta_x;
-    report[2] = (uint8_t)delta_y;
-    report[3] = (uint8_t)scroll;
+    // Custom mouse report with Report ID (matching hid-remapper format)
+    // Report format: [Report ID, buttons, x_low, x_high, y_low, y_high, wheel_low, wheel_high, pan_low, pan_high]
+    uint8_t report[10] = {0};
+    report[0] = 1;  // REPORT_ID_MOUSE
+    report[1] = buttons;
     
-    if (tud_hid_n_ready(ITF_NUM_HID_MOUSE)) {
-        return tud_hid_n_report(ITF_NUM_HID_MOUSE, 0, report, sizeof(report));
+    // Convert 8-bit deltas to 16-bit (little endian)
+    int16_t x16 = (int16_t)delta_x;
+    int16_t y16 = (int16_t)delta_y;
+    int16_t scroll16 = (int16_t)scroll;
+    
+    report[2] = x16 & 0xFF;        // x low byte
+    report[3] = (x16 >> 8) & 0xFF; // x high byte
+    report[4] = y16 & 0xFF;        // y low byte
+    report[5] = (y16 >> 8) & 0xFF; // y high byte
+    report[6] = scroll16 & 0xFF;        // wheel low byte
+    report[7] = (scroll16 >> 8) & 0xFF; // wheel high byte
+    // report[8], report[9] = pan (leave as 0)
+    
+    if (tud_hid_n_ready(ITF_NUM_HID_KEYBOARD)) {  // Send through keyboard interface
+        return tud_hid_n_report(ITF_NUM_HID_KEYBOARD, REPORT_ID_MOUSE, report, sizeof(report));
     }
     return false;
 }
