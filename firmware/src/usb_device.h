@@ -15,4 +15,10 @@ bool usb_device_send_mouse_report(uint8_t buttons, int8_t delta_x, int8_t delta_
 // Test functions
 bool usb_device_send_test_mouse_movement(void);
 
+// Debug counters
+uint32_t usb_device_get_device_desc_calls(void);
+uint32_t usb_device_get_config_desc_calls(void);
+uint32_t usb_device_get_hid_desc_calls(void);
+uint32_t usb_device_get_mount_calls(void);
+
 #endif

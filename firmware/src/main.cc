@@ -128,6 +128,18 @@ int main() {
                 snprintf(line, sizeof(line), "HOST: NONE");
             }
             sh1107_draw_string(&display, 0, 30, line);
+            
+            // USB descriptor callback counts - this will tell us what's happening
+            uint32_t dev_calls = usb_device_get_device_desc_calls();
+            uint32_t cfg_calls = usb_device_get_config_desc_calls();
+            uint32_t hid_calls = usb_device_get_hid_desc_calls();
+            uint32_t mnt_calls = usb_device_get_mount_calls();
+            
+            snprintf(line, sizeof(line), "D:%ld C:%ld H:%ld", dev_calls, cfg_calls, hid_calls);
+            sh1107_draw_string(&display, 0, 45, line);
+            
+            snprintf(line, sizeof(line), "MNT:%ld", mnt_calls);
+            sh1107_draw_string(&display, 0, 60, line);
 
             sh1107_display(&display);
             last_display_update = now;
