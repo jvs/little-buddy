@@ -137,8 +137,8 @@ bool usb_device_send_mouse_report(uint8_t buttons, int8_t delta_x, int8_t delta_
     report[7] = (scroll16 >> 8) & 0xFF; // wheel high byte
     // report[8], report[9] = pan (leave as 0)
     
-    if (tud_hid_n_ready(ITF_NUM_HID_MOUSE)) {  // Send through mouse interface
-        return tud_hid_n_report(ITF_NUM_HID_MOUSE, REPORT_ID_MOUSE, report, sizeof(report));
+    if (tud_hid_n_ready(ITF_NUM_HID_KEYBOARD)) {  // Send through keyboard interface (contains all HID reports)
+        return tud_hid_n_report(ITF_NUM_HID_KEYBOARD, REPORT_ID_MOUSE, report, sizeof(report));
     }
     return false;
 }
