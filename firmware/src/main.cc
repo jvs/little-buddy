@@ -3,6 +3,8 @@
 #include <hardware/i2c.h>
 #include <hardware/gpio.h>
 #include <stdio.h>
+#include <tusb.h>
+#include <pio_usb.h>
 
 #include "activity_led.h"
 #include "sh1107_display.h"
@@ -10,6 +12,13 @@
 #include "usb_device.h"
 #include "usb_events.h"
 
+void configure_pio_usb() {
+    // Configure PIO USB for host mode - matching hid-remapper
+    pio_usb_configuration_t pio_cfg = PIO_USB_DEFAULT_CONFIG;
+    pio_cfg.pin_dp = PICO_DEFAULT_PIO_USB_DP_PIN;
+    pio_cfg.skip_alarm_pool = true;
+    tuh_configure(BOARD_TUH_RHPORT, TUH_CFGID_RPI_PIO_USB_CONFIGURATION, &pio_cfg);
+}
 
 int main() {
     board_init();
@@ -25,10 +34,18 @@ int main() {
     sh1107_t display;
     bool display_ok = sh1107_init(&display, i2c1);
 
-    // Initialize USB (both host and device)
-    usb_host_init();  // Just init event queue
-    usb_device_init(); // Just setup
-    tusb_init();       // Unified TinyUSB init
+    // Initialize USB event queue (still needed for our event system)
+    usb_event_queue_t event_queue;
+    usb_event_queue_init(&event_queue);
+
+    // Initialize host event system
+    usb_host_init(&event_queue);
+    
+    // Configure PIO USB before TinyUSB init (hid-remapper style)
+    configure_pio_usb();
+    
+    // Initialize USB - hid-remapper style single init
+    tusb_init();
 
     // Show startup message
     if (display_ok) {
@@ -46,15 +63,14 @@ int main() {
     uint32_t last_heartbeat = 0;
     
     while (true) {
-        // Service USB host and device
-        usb_host_task();
-        usb_device_task();
+        // Service USB host and device - hid-remapper style
+        tuh_task();  // Host task directly
+        tud_task();  // Device task directly
 
         // Process USB events
-        usb_event_queue_t* queue = usb_host_get_event_queue();
         usb_event_t event;
 
-        while (usb_event_queue_pop(queue, &event)) {
+        while (usb_event_queue_pop(&event_queue, &event)) {
             last_event = event;
             activity_led_on();
             

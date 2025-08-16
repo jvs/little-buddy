@@ -6,7 +6,7 @@
 #include "pico/time.h"
 #include <stdio.h>
 
-static usb_event_queue_t g_event_queue;
+static usb_event_queue_t* g_event_queue = nullptr;
 static uint32_t g_report_count = 0;
 static uint32_t g_mount_count = 0;
 static uint32_t g_sequence_counter = 0;
@@ -14,9 +14,8 @@ static hid_descriptor_t g_hid_descriptors[CFG_TUH_HID] = {0};
 static uint8_t g_interface_protocols[CFG_TUH_HID] = {0}; // Track each interface's protocol
 static last_report_t g_last_reports[CFG_TUH_HID] = {0}; // Track last report from each interface
 
-void usb_host_init(void) {
-    usb_event_queue_init(&g_event_queue);
-    // Don't init here - will be done by unified tusb_init()
+void usb_host_init(usb_event_queue_t* queue) {
+    g_event_queue = queue;
 }
 
 void usb_host_task(void) {
@@ -24,7 +23,7 @@ void usb_host_task(void) {
 }
 
 usb_event_queue_t* usb_host_get_event_queue(void) {
-    return &g_event_queue;
+    return g_event_queue;
 }
 
 uint32_t usb_host_get_report_count(void) {
@@ -97,7 +96,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
         event.data.device.device_type = protocol_str[itf_protocol];
     }
     
-    usb_event_queue_push(&g_event_queue, &event);
+    if (g_event_queue) usb_event_queue_push(g_event_queue, &event);
     
     // Request first report
     if (!tuh_hid_receive_report(dev_addr, instance)) {
@@ -125,7 +124,7 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
     event.data.device.instance = instance;
     event.data.device.device_type = "UNKNOWN";
     
-    usb_event_queue_push(&g_event_queue, &event);
+    if (g_event_queue) usb_event_queue_push(g_event_queue, &event);
     
     // Debug: device unmounted
 }
@@ -170,7 +169,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
             event.data.keyboard.modifier = modifier;
             event.data.keyboard.keycode = keycode;
             event.data.keyboard.pressed = true;
-            usb_event_queue_push(&g_event_queue, &event);
+            if (g_event_queue) usb_event_queue_push(g_event_queue, &event);
         }
     } else if (instance == 1 && len == 6) {
         // IF1: Mouse (6 bytes) - Custom format with report ID
@@ -187,7 +186,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
             event.data.mouse.delta_x = delta_x;
             event.data.mouse.delta_y = delta_y;
             event.data.mouse.scroll = 0;  // Might be in bytes 4-5 if needed
-            usb_event_queue_push(&g_event_queue, &event);
+            if (g_event_queue) usb_event_queue_push(g_event_queue, &event);
         }
     }
     
