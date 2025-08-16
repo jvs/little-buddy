@@ -154,7 +154,7 @@ int main() {
             }
             
             // Show forwarding status
-            bool hid_ready = tud_hid_n_ready(2) && tud_hid_n_ready(3);  // Both keyboard and mouse interfaces
+            bool hid_ready = tud_hid_n_ready(0) && tud_hid_n_ready(1);  // Both keyboard and mouse interfaces
             snprintf(line, sizeof(line), "FWD: %s", hid_ready ? "READY" : "WAIT");
             sh1107_draw_string(&display, 0, 75, line);
             
@@ -186,7 +186,7 @@ int main() {
         // Heartbeat debug every 5 seconds
         uint32_t now_ms = to_ms_since_boot(get_absolute_time());
         if (now_ms - last_heartbeat > 5000) {
-            debug_printf("Heartbeat: device connected=%d\n", tud_cdc_connected());
+            debug_printf("Heartbeat: device mounted=%d\n", tud_mounted());
             last_heartbeat = now_ms;
         }
 

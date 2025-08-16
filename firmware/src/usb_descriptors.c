@@ -57,34 +57,26 @@ uint8_t const * tud_descriptor_device_cb(void)
 
 enum
 {
-  ITF_NUM_CDC = 0,
-  ITF_NUM_CDC_DATA,
-  ITF_NUM_HID_KEYBOARD,
+  ITF_NUM_HID_KEYBOARD = 0,
   ITF_NUM_HID_MOUSE,
   ITF_NUM_TOTAL
 };
 
-#define CONFIG_TOTAL_LEN  (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN + TUD_HID_DESC_LEN + TUD_HID_DESC_LEN)
+#define CONFIG_TOTAL_LEN  (TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN + TUD_HID_DESC_LEN)
 
-#define EPNUM_CDC_NOTIF   0x81
-#define EPNUM_CDC_OUT     0x02
-#define EPNUM_CDC_IN      0x82
-#define EPNUM_HID_KEYBOARD 0x83
-#define EPNUM_HID_MOUSE   0x84
+#define EPNUM_HID_KEYBOARD 0x81
+#define EPNUM_HID_MOUSE   0x82
 
 uint8_t const desc_fs_configuration[] =
 {
   // Config number, interface count, string index, total length, attribute, power in mA
   TUD_CONFIG_DESCRIPTOR(1, ITF_NUM_TOTAL, 0, CONFIG_TOTAL_LEN, 0x00, 100),
 
-  // CDC: Interface number, string index, EP notification address and size, EP data address (out, in) and size.
-  TUD_CDC_DESCRIPTOR(ITF_NUM_CDC, 4, EPNUM_CDC_NOTIF, 8, EPNUM_CDC_OUT, EPNUM_CDC_IN, 64),
-
   // HID Keyboard: Interface number, string index, protocol, report descriptor len, EP In address, size & polling interval
-  TUD_HID_DESCRIPTOR(ITF_NUM_HID_KEYBOARD, 5, HID_ITF_PROTOCOL_KEYBOARD, sizeof(desc_hid_keyboard_report), EPNUM_HID_KEYBOARD, CFG_TUD_HID_EP_BUFSIZE, 1),
+  TUD_HID_DESCRIPTOR(ITF_NUM_HID_KEYBOARD, 0, HID_ITF_PROTOCOL_KEYBOARD, sizeof(desc_hid_keyboard_report), EPNUM_HID_KEYBOARD, CFG_TUD_HID_EP_BUFSIZE, 1),
 
   // HID Mouse: Interface number, string index, protocol, report descriptor len, EP In address, size & polling interval  
-  TUD_HID_DESCRIPTOR(ITF_NUM_HID_MOUSE, 6, HID_ITF_PROTOCOL_MOUSE, sizeof(desc_hid_mouse_report), EPNUM_HID_MOUSE, CFG_TUD_HID_EP_BUFSIZE, 1),
+  TUD_HID_DESCRIPTOR(ITF_NUM_HID_MOUSE, 0, HID_ITF_PROTOCOL_MOUSE, sizeof(desc_hid_mouse_report), EPNUM_HID_MOUSE, CFG_TUD_HID_EP_BUFSIZE, 1),
 };
 
 // Invoked when received GET CONFIGURATION DESCRIPTOR
@@ -106,9 +98,6 @@ enum {
   STRID_MANUFACTURER,
   STRID_PRODUCT,
   STRID_SERIAL,
-  STRID_CDC_INTERFACE,
-  STRID_HID_KEYBOARD,
-  STRID_HID_MOUSE,
 };
 
 // array of pointer to string descriptors
@@ -116,11 +105,8 @@ char const* string_desc_arr [] =
 {
   (const char[]) { 0x09, 0x04 }, // 0: is supported language is English (0x0409)
   "Little Buddy",                     // 1: Manufacturer
-  "Little Buddy USB Host",            // 2: Product
+  "Little Buddy HID Device",          // 2: Product
   "123456",                      // 3: Serials, should use chip ID
-  "Little Buddy CDC",            // 4: CDC Interface
-  "Little Buddy Keyboard",       // 5: HID Keyboard
-  "Little Buddy Mouse",          // 6: HID Mouse
 };
 
 static uint16_t _desc_str[32];

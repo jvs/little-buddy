@@ -4,25 +4,14 @@
 #include <stdarg.h>
 
 // Interface numbers (must match usb_descriptors.c)
-#define ITF_NUM_CDC_DATA      1
-#define ITF_NUM_HID_KEYBOARD  2  
-#define ITF_NUM_HID_MOUSE     3
+#define ITF_NUM_HID_KEYBOARD  0  
+#define ITF_NUM_HID_MOUSE     1
 
-static char printf_buffer[256];
-
-// Custom printf that outputs to USB CDC
+// Debug printf - now just a stub since no CDC
 int debug_printf(const char* format, ...) {
-    va_list args;
-    va_start(args, format);
-    int len = vsnprintf(printf_buffer, sizeof(printf_buffer), format, args);
-    va_end(args);
-    
-    if (tud_cdc_connected()) {
-        tud_cdc_write(printf_buffer, len);
-        tud_cdc_write_flush();
-    }
-    
-    return len;
+    // CDC removed - debug output disabled
+    (void)format;
+    return 0;
 }
 
 void usb_device_init(void) {
@@ -93,27 +82,7 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t rep
     (void) bufsize;
 }
 
-//--------------------------------------------------------------------+
-// USB CDC
-//--------------------------------------------------------------------+
-void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts)
-{
-    (void) itf;
-    (void) rts;
-
-    // DTR = false is counted as disconnected
-    if ( !dtr )
-    {
-        // Terminal disconnected
-    }
-}
-
-// Invoked when CDC interface received data from host
-void tud_cdc_rx_cb(uint8_t itf)
-{
-    (void) itf;
-    // Data received from host - we don't need to handle this for debug output
-}
+// CDC removed - no CDC callbacks needed
 
 //--------------------------------------------------------------------+
 // HID Report Sending Functions
