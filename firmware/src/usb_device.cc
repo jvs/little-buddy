@@ -86,7 +86,11 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t rep
     (void) bufsize;
 }
 
-// CDC removed - no CDC callbacks needed
+// Missing HID callback that hid-remapper has
+void tud_hid_set_protocol_cb(uint8_t instance, uint8_t protocol) {
+    // Handle HID boot protocol negotiation (required for proper enumeration)
+    debug_printf("tud_hid_set_protocol_cb %d %d\n", instance, protocol);
+}
 
 //--------------------------------------------------------------------+
 // HID Report Sending Functions
