@@ -6,8 +6,8 @@
 #include <string.h>
 
 // Interface numbers (must match usb_descriptors.c)
-#define ITF_NUM_HID_KEYBOARD  0  
-#define ITF_NUM_HID_MOUSE     1
+// Single combined HID interface for both keyboard and mouse
+#define ITF_NUM_HID_COMBINED  0
 
 // Report IDs (must match usb_descriptors.c)
 #define REPORT_ID_MOUSE 1
@@ -80,7 +80,7 @@ uint16_t tud_hid_get_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t
     // Handle GET_REPORT requests properly for device enumeration
     debug_printf("tud_hid_get_report_cb itf=%d rid=%d type=%d len=%d\n", itf, report_id, report_type, reqlen);
     
-    if (itf == ITF_NUM_HID_KEYBOARD) {
+    if (itf == ITF_NUM_HID_COMBINED) {
         // For HID enumeration, we need to handle certain report requests
         if (report_type == HID_REPORT_TYPE_FEATURE) {
             // Handle feature reports (like resolution multiplier)
@@ -98,7 +98,7 @@ uint16_t tud_hid_get_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t
                 return 10;
             }
         }
-    } else if (itf == ITF_NUM_HID_MOUSE) {
+    } else {
         // Handle config/vendor interface requests
         if (report_type == HID_REPORT_TYPE_FEATURE && reqlen > 0) {
             memset(buffer, 0, reqlen); // Return zeros for config
@@ -116,7 +116,7 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t rep
     // Handle SET_REPORT requests properly for device enumeration
     debug_printf("tud_hid_set_report_cb itf=%d rid=%d type=%d size=%d\n", itf, report_id, report_type, bufsize);
     
-    if (itf == ITF_NUM_HID_KEYBOARD) {
+    if (itf == ITF_NUM_HID_COMBINED) {
         // Handle report ID extraction if needed (like hid-remapper does)
         if ((report_id == 0) && (report_type == 0) && (bufsize > 0)) {
             report_id = buffer[0];
@@ -136,7 +136,7 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t rep
                 debug_printf("LED state set to: 0x%02X\n", buffer[0]);
             }
         }
-    } else if (itf == ITF_NUM_HID_MOUSE) {
+    } else {
         // Handle config interface reports
         if (report_type == HID_REPORT_TYPE_FEATURE) {
             debug_printf("Config report received, size: %d\n", bufsize);
@@ -177,8 +177,8 @@ bool usb_device_send_keyboard_report(uint8_t modifier, uint8_t keycode) {
         report[byte_index] |= (1 << bit_offset);
     }
     
-    if (tud_hid_n_ready(ITF_NUM_HID_KEYBOARD)) {
-        return tud_hid_n_report(ITF_NUM_HID_KEYBOARD, REPORT_ID_KEYBOARD, report, sizeof(report));
+    if (tud_hid_n_ready(ITF_NUM_HID_COMBINED)) {
+        return tud_hid_n_report(ITF_NUM_HID_COMBINED, REPORT_ID_KEYBOARD, report, sizeof(report));
     }
     return false;
 }
@@ -203,8 +203,8 @@ bool usb_device_send_mouse_report(uint8_t buttons, int8_t delta_x, int8_t delta_
     report[7] = (scroll16 >> 8) & 0xFF; // wheel high byte
     // report[8], report[9] = pan (leave as 0)
     
-    if (tud_hid_n_ready(ITF_NUM_HID_KEYBOARD)) {  // Send through keyboard interface (contains all HID reports)
-        return tud_hid_n_report(ITF_NUM_HID_KEYBOARD, REPORT_ID_MOUSE, report, sizeof(report));
+    if (tud_hid_n_ready(ITF_NUM_HID_COMBINED)) {  // Send through combined interface
+        return tud_hid_n_report(ITF_NUM_HID_COMBINED, REPORT_ID_MOUSE, report, sizeof(report));
     }
     return false;
 }

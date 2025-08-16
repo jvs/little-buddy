@@ -20,7 +20,7 @@ uint32_t usb_get_device_desc_calls(void);
 uint32_t usb_get_config_desc_calls(void);
 uint32_t usb_get_hid_desc_calls(void);
 
-// Debug counters (from usb_device.cc)
+// Debug counters (from usb_device.c)
 uint32_t usb_device_get_mount_calls(void);
 
 #endif
