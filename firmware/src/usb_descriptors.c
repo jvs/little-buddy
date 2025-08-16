@@ -65,7 +65,7 @@ enum
 #define CONFIG_TOTAL_LEN  (TUD_CONFIG_DESC_LEN + TUD_HID_DESC_LEN + TUD_HID_DESC_LEN)
 
 #define EPNUM_HID_KEYBOARD 0x81
-#define EPNUM_HID_MOUSE   0x82
+#define EPNUM_HID_MOUSE   0x83
 
 uint8_t const desc_fs_configuration[] =
 {
