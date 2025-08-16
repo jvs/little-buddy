@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <tusb.h>
 #include <pio_usb.h>
+#include <pico/time.h>
 
 #include "activity_led.h"
 #include "sh1107_display.h"
@@ -12,12 +13,23 @@
 #include "usb_device.h"
 #include "usb_events.h"
 
+static repeating_timer_t sof_timer;
+
+// Manual SOF timer for PIO USB - critical for host operation
+static bool __no_inline_not_in_flash_func(manual_sof)(repeating_timer_t* rt) {
+    pio_usb_host_frame();
+    return true;
+}
+
 void configure_pio_usb() {
     // Configure PIO USB for host mode - matching hid-remapper
     pio_usb_configuration_t pio_cfg = PIO_USB_DEFAULT_CONFIG;
     pio_cfg.pin_dp = PICO_DEFAULT_PIO_USB_DP_PIN;
     pio_cfg.skip_alarm_pool = true;
     tuh_configure(BOARD_TUH_RHPORT, TUH_CFGID_RPI_PIO_USB_CONFIGURATION, &pio_cfg);
+    
+    // Add manual SOF timer - essential for PIO USB host operation
+    add_repeating_timer_us(-1000, manual_sof, NULL, &sof_timer);
 }
 
 int main() {
