@@ -47,7 +47,6 @@ endif()
 
 target_include_directories(little_buddy PRIVATE
     src
-    src/tusb_config_both
     ${PICO_PIO_USB_PATH}
 )
 
