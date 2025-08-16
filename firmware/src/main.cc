@@ -54,13 +54,10 @@ int main() {
     usb_host_init();
     usb_device_init();
     
-    // Initialize like TinyUSB dual examples: board_init() THEN PIO USB THEN separate init calls
+    // Match hid-remapper sequence exactly: board_init() THEN PIO USB THEN tusb_init()
     board_init();
     configure_pio_usb();  // This matches hid-remapper's extra_init() placement
-    
-    // Initialize device stack on native USB (port 0) and host stack on PIO USB (port 1)
-    tud_init(BOARD_TUD_RHPORT);  // Device on port 0 (native USB)
-    tuh_init(BOARD_TUH_RHPORT);  // Host on port 1 (PIO USB)
+    tusb_init();
     
     // Register SOF handler for device stack - critical for dual USB operation
     tud_sof_isr_set(sof_handler);
