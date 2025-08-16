@@ -22,6 +22,11 @@ static bool __no_inline_not_in_flash_func(manual_sof)(repeating_timer_t* rt) {
     return true;
 }
 
+// SOF handler for USB device stack - critical for proper enumeration
+void __no_inline_not_in_flash_func(sof_handler)(uint32_t frame_count) {
+    (void) frame_count;  // Suppress unused parameter warning
+}
+
 void configure_pio_usb() {
     // Configure PIO USB for host mode - matching hid-remapper
     pio_usb_configuration_t pio_cfg = PIO_USB_DEFAULT_CONFIG;
@@ -53,6 +58,9 @@ int main() {
     board_init();
     configure_pio_usb();  // This matches hid-remapper's extra_init() placement
     tusb_init();
+    
+    // Register SOF handler for device stack - critical for dual USB operation
+    tud_sof_isr_set(sof_handler);
 
     // Show startup message
     if (display_ok) {
