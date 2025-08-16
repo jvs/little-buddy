@@ -7,7 +7,7 @@
 #include <pio_usb.h>
 #include <pico/time.h>
 
-#include "activity_led.h"
+#include "red_led.h"
 #include "sh1107_display.h"
 #include "usb_host.h"
 #include "usb_device.h"
@@ -89,7 +89,7 @@ int main() {
 
         while (usb_event_queue_pop(queue, &event)) {
             last_event = event;
-            activity_led_on();
+            red_led_on();
             
             // Forward events to USB device (computer)
             switch (event.type) {
@@ -108,7 +108,7 @@ int main() {
             }
             
             sleep_ms(50);  // Brief flash
-            activity_led_off();
+            red_led_off();
         }
 
         // Update display every 100ms or when there's a new event

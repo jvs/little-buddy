@@ -29,7 +29,7 @@ endif()
 
 add_executable(little_buddy
     src/main.cc
-    src/activity_led.cc
+    src/red_led.cc
     src/interval_override.cc
     src/sh1107_display.cc
     src/usb_events.cc
