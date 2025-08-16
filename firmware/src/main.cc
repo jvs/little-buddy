@@ -104,18 +104,12 @@ int main() {
             snprintf(line, sizeof(line), "CDC: %s", tud_cdc_connected() ? "CONN" : "DISC");
             sh1107_draw_string(&display, 0, 45, line);
             
-            // Show HID interface readiness
-            bool kbd_ready = tud_hid_n_ready(2);
-            bool mouse_ready = tud_hid_n_ready(3);
-            snprintf(line, sizeof(line), "KBD:%s MSE:%s", kbd_ready ? "RDY" : "NO", mouse_ready ? "RDY" : "NO");
-            sh1107_draw_string(&display, 0, 60, line);
-            
-            // Test: Send dummy reports every few seconds
-            static uint32_t last_test = 0;
-            if (now - last_test > 3000 && kbd_ready) {  // Every 3 seconds
-                usb_device_send_keyboard_report(0, 0x04);  // Send 'a' key
-                debug_printf("TEST: Sent keyboard 'a'\n");
-                last_test = now;
+            // Show heartbeat
+            static uint32_t last_heartbeat_display = 0;
+            if (now - last_heartbeat_display > 1000) {
+                snprintf(line, sizeof(line), "TICK: %lus", now / 1000);
+                sh1107_draw_string(&display, 0, 60, line);
+                last_heartbeat_display = now;
             }
 
             sh1107_display(&display);
