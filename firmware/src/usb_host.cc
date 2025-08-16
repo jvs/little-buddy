@@ -110,7 +110,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
         debug_event.data.keyboard.keycode = 0xFF; // Special code to indicate error
         debug_event.data.keyboard.modifier = 0xFF;
         debug_event.data.keyboard.pressed = true;
-        usb_event_queue_push(&g_event_queue, &debug_event);
+        if (g_event_queue) usb_event_queue_push(g_event_queue, &debug_event);
     }
 }
 
