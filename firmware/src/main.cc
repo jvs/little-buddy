@@ -44,15 +44,13 @@ int main() {
     sh1107_t display;
     bool display_ok = sh1107_init(&display, i2c1);
 
-    // Configure PIO USB before board_init (matching hid-remapper sequence)
-    configure_pio_usb();
-    
     // Initialize USB host/device setup
     usb_host_init();
     usb_device_init();
     
-    // board_init() before tusb_init() (matching hid-remapper exactly)
+    // Match hid-remapper sequence exactly: board_init() THEN PIO USB THEN tusb_init()
     board_init();
+    configure_pio_usb();  // This matches hid-remapper's extra_init() placement
     tusb_init();
 
     // Show startup message
