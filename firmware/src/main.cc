@@ -54,10 +54,13 @@ int main() {
     usb_host_init();
     usb_device_init();
     
-    // Match hid-remapper sequence exactly: board_init() THEN PIO USB THEN tusb_init()
+    // Initialize like TinyUSB dual examples: board_init() THEN PIO USB THEN separate init calls
     board_init();
     configure_pio_usb();  // This matches hid-remapper's extra_init() placement
-    tusb_init();
+    
+    // Initialize device stack on native USB (port 0) and host stack on PIO USB (port 1)
+    tud_init(BOARD_TUD_RHPORT);  // Device on port 0 (native USB)
+    tuh_init(BOARD_TUH_RHPORT);  // Host on port 1 (PIO USB)
     
     // Register SOF handler for device stack - critical for dual USB operation
     tud_sof_isr_set(sof_handler);
@@ -123,10 +126,16 @@ int main() {
             snprintf(line, sizeof(line), "DEV: %s", mounted ? "MOUNT" : "NOMNT");
             sh1107_draw_string(&display, 0, 0, line);
             
+            // Descriptor callback counts to see if host is asking for descriptors
+            uint32_t dev_calls = usb_get_device_desc_calls();
+            uint32_t cfg_calls = usb_get_config_desc_calls();
+            snprintf(line, sizeof(line), "DESC: %lu/%lu", dev_calls, cfg_calls);
+            sh1107_draw_string(&display, 0, 15, line);
+            
             // HID readiness  
             bool hid0_ready = tud_hid_n_ready(0);
             snprintf(line, sizeof(line), "HID0: %s", hid0_ready ? "RDY" : "WAIT");
-            sh1107_draw_string(&display, 0, 15, line);
+            sh1107_draw_string(&display, 0, 30, line);
             
             // Host events
             if (last_event.type == USB_EVENT_MOUSE) {
@@ -136,7 +145,7 @@ int main() {
             } else {
                 snprintf(line, sizeof(line), "HOST: NONE");
             }
-            sh1107_draw_string(&display, 0, 30, line);
+            sh1107_draw_string(&display, 0, 45, line);
             
 
             sh1107_display(&display);
