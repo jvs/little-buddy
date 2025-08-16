@@ -13,6 +13,11 @@
 #include "usb_device.h"
 #include "usb_events.h"
 
+// USB descriptor debug functions
+extern uint32_t usb_get_device_desc_calls(void);
+extern uint32_t usb_get_config_desc_calls(void);
+extern uint32_t usb_get_hid_desc_calls(void);
+
 static repeating_timer_t sof_timer;
 
 // Manual SOF timer for PIO USB - critical for host operation

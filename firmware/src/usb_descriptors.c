@@ -1,5 +1,10 @@
 #include "tusb.h"
 
+// Forward declarations for debug functions
+uint32_t usb_get_device_desc_calls(void);
+uint32_t usb_get_config_desc_calls(void);
+uint32_t usb_get_hid_desc_calls(void);
+
 //--------------------------------------------------------------------+
 // HID Report Descriptors (matching hid-remapper)
 //--------------------------------------------------------------------+
