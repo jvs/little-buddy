@@ -2,6 +2,7 @@
 #include <pico/time.h>
 #include <hardware/i2c.h>
 #include <hardware/gpio.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <tusb.h>
 #include <pio_usb.h>

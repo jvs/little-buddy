@@ -2,6 +2,7 @@
 #include "tusb.h"
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <string.h>
 
 // Interface numbers (must match usb_descriptors.c)
