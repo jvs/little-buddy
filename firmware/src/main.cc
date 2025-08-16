@@ -115,69 +115,46 @@ int main() {
 
             char line[32];  // Larger buffer to avoid truncation
 
-            // Skip counters - they're not as useful for debugging now
-
-            // Show interface information and raw reports side by side
-            const last_report_t* report0 = usb_host_get_last_report(0);
-            const last_report_t* report1 = usb_host_get_last_report(1);
+            // USB DEVICE DEBUG INFO
             
-            // Interface 0 header (Keyboard)
-            sh1107_draw_string(&display, 0, 15, "IF0:KEYBOARD");
+            // Device status
+            bool mounted = tud_mounted();
+            bool suspended = tud_suspended();
+            snprintf(line, sizeof(line), "DEV: %s %s", 
+                    mounted ? "MOUNT" : "NOMNT",
+                    suspended ? "SUSP" : "ACTV");
+            sh1107_draw_string(&display, 0, 15, line);
             
-            // Interface 0 raw data (first 4 bytes)
-            if (report0 && report0->length > 0) {
-                snprintf(line, sizeof(line), "%02X%02X%02X%02X L%d", 
-                        report0->data[0], 
-                        report0->length > 1 ? report0->data[1] : 0,
-                        report0->length > 2 ? report0->data[2] : 0,
-                        report0->length > 3 ? report0->data[3] : 0,
-                        report0->length);
-                sh1107_draw_string(&display, 0, 30, line);
+            // HID interface status  
+            bool hid0_ready = tud_hid_n_ready(0);
+            bool hid1_ready = tud_hid_n_ready(1);
+            snprintf(line, sizeof(line), "HID: IF0=%s IF1=%s", 
+                    hid0_ready ? "RDY" : "WAIT",
+                    hid1_ready ? "RDY" : "WAIT");
+            sh1107_draw_string(&display, 0, 30, line);
+            
+            // Combined forwarding status
+            snprintf(line, sizeof(line), "FWD: %s", hid0_ready ? "READY" : "WAIT");
+            sh1107_draw_string(&display, 0, 45, line);
+            
+            // Host event summary (one line)
+            if (last_event.type == USB_EVENT_MOUSE) {
+                snprintf(line, sizeof(line), "HOST: MSE DX=%d DY=%d B=%d",
+                        last_event.data.mouse.delta_x, last_event.data.mouse.delta_y, 
+                        last_event.data.mouse.buttons);
+            } else if (last_event.type == USB_EVENT_KEYBOARD) {
+                snprintf(line, sizeof(line), "HOST: KBD K=%02X M=%02X", 
+                        last_event.data.keyboard.keycode, last_event.data.keyboard.modifier);
             } else {
-                sh1107_draw_string(&display, 0, 30, "---- L0");
+                snprintf(line, sizeof(line), "HOST: No events");
             }
+            sh1107_draw_string(&display, 0, 60, line);
             
-            // Interface 1 header (Mouse)
-            sh1107_draw_string(&display, 0, 45, "IF1:MOUSE");
-            
-            // Interface 1 raw data (first 4 bytes)
-            if (report1 && report1->length > 0) {
-                snprintf(line, sizeof(line), "%02X%02X%02X%02X L%d", 
-                        report1->data[0], 
-                        report1->length > 1 ? report1->data[1] : 0,
-                        report1->length > 2 ? report1->data[2] : 0,
-                        report1->length > 3 ? report1->data[3] : 0,
-                        report1->length);
-                sh1107_draw_string(&display, 0, 60, line);
-            } else {
-                sh1107_draw_string(&display, 0, 60, "---- L0");
-            }
-            
-            // Show forwarding status
-            bool hid_ready = tud_hid_n_ready(0);  // Only keyboard interface (like hid-remapper)
-            snprintf(line, sizeof(line), "FWD: %s", hid_ready ? "READY" : "WAIT");
+            // Test status
+            uint32_t test_time_left = 3000 - (now_ms - last_test_movement);
+            if (test_time_left > 3000) test_time_left = 0; // Handle wraparound
+            snprintf(line, sizeof(line), "TEST: %lums to next move", test_time_left);
             sh1107_draw_string(&display, 0, 75, line);
-            
-            // Show last parsed event on a separate line  
-            if (last_event.type != USB_EVENT_NONE) {
-                switch (last_event.type) {
-                    case USB_EVENT_MOUSE:
-                        snprintf(line, sizeof(line), "MSE: DX=%d DY=%d B=%d",
-                                last_event.data.mouse.delta_x, last_event.data.mouse.delta_y, 
-                                last_event.data.mouse.buttons);
-                        sh1107_draw_string(&display, 0, 90, line);
-                        break;
-
-                    case USB_EVENT_KEYBOARD:
-                        snprintf(line, sizeof(line), "KBD: K=%02X M=%02X", 
-                                last_event.data.keyboard.keycode, last_event.data.keyboard.modifier);
-                        sh1107_draw_string(&display, 0, 90, line);
-                        break;
-
-                    default:
-                        break;
-                }
-            }
 
             sh1107_display(&display);
             last_display_update = now;
