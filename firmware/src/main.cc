@@ -151,7 +151,8 @@ int main() {
             sh1107_draw_string(&display, 0, 60, line);
             
             // Test status
-            uint32_t test_time_left = 3000 - (now_ms - last_test_movement);
+            uint32_t current_time = to_ms_since_boot(get_absolute_time());
+            uint32_t test_time_left = 3000 - (current_time - last_test_movement);
             if (test_time_left > 3000) test_time_left = 0; // Handle wraparound
             snprintf(line, sizeof(line), "TEST: %lums to next move", test_time_left);
             sh1107_draw_string(&display, 0, 75, line);
