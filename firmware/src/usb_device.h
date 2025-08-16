@@ -4,10 +4,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void usb_device_init(void);
 void usb_device_task(void);
 int debug_printf(const char* format, ...);
@@ -26,9 +22,5 @@ uint32_t usb_get_hid_desc_calls(void);
 
 // Debug counters (from usb_device.cc)
 uint32_t usb_device_get_mount_calls(void);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
