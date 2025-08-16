@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 
+
 add_compile_definitions(PICO_DEFAULT_UART_BAUD_RATE=921600)
 add_compile_definitions(PERSISTED_CONFIG_SIZE=4096)
 add_compile_definitions(PICO_XOSC_STARTUP_DELAY_MULTIPLIER=64)
@@ -7,6 +8,7 @@ add_compile_definitions(PICO_XOSC_STARTUP_DELAY_MULTIPLIER=64)
 set(PICO_SDK_PATH "${CMAKE_CURRENT_LIST_DIR}/pico-sdk")
 set(PICO_TINYUSB_PATH "${CMAKE_CURRENT_LIST_DIR}/tinyusb")
 set(PICO_PIO_USB_PATH "${CMAKE_CURRENT_LIST_DIR}/Pico-PIO-USB")
+set(PICO_BOARD_HEADER_DIRS "${CMAKE_CURRENT_LIST_DIR}/src")
 
 include(pico_sdk_import.cmake)
 
