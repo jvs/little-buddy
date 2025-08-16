@@ -33,8 +33,6 @@ void configure_pio_usb() {
 }
 
 int main() {
-    board_init();
-
     // Initialize I2C for STEMMA QT connector (GPIO 2=SDA, 3=SCL)
     i2c_init(i2c1, 400000);
     gpio_set_function(2, GPIO_FUNC_I2C);
@@ -46,13 +44,16 @@ int main() {
     sh1107_t display;
     bool display_ok = sh1107_init(&display, i2c1);
 
-    // Configure PIO USB before TinyUSB init (hid-remapper style)
+    // Configure PIO USB before board_init (matching hid-remapper sequence)
     configure_pio_usb();
     
-    // Initialize USB (both host and device) - keep our working pattern
-    usb_host_init();  // Just init event queue
-    usb_device_init(); // Just setup
-    tusb_init();       // Unified TinyUSB init
+    // Initialize USB host/device setup
+    usb_host_init();
+    usb_device_init();
+    
+    // board_init() before tusb_init() (matching hid-remapper exactly)
+    board_init();
+    tusb_init();
 
     // Show startup message
     if (display_ok) {
