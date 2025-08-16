@@ -25,14 +25,14 @@ add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-std=c++17>)
 
 
 add_executable(little_buddy
-    src/main.cc
-    src/red_led.cc
-    src/interval_override.cc
-    src/sh1107_display.cc
-    src/usb_events.cc
-    src/usb_host.cc
-    src/hid_parser.cc
-    src/usb_device.cc
+    src/main.c
+    src/red_led.c
+    src/interval_override.c
+    src/sh1107_display.c
+    src/usb_events.c
+    src/usb_host.c
+    src/hid_parser.c
+    src/usb_device.c
     src/usb_descriptors.c
 )
 
