@@ -1,22 +1,6 @@
 #include "tusb.h"
 
 //--------------------------------------------------------------------+
-// HID Report Descriptors
-//--------------------------------------------------------------------+
-
-// Standard HID Keyboard Report Descriptor
-uint8_t const desc_hid_keyboard_report[] =
-{
-  TUD_HID_REPORT_DESC_KEYBOARD()
-};
-
-// Standard HID Mouse Report Descriptor  
-uint8_t const desc_hid_mouse_report[] =
-{
-  TUD_HID_REPORT_DESC_MOUSE()
-};
-
-//--------------------------------------------------------------------+
 // Device Descriptors
 //--------------------------------------------------------------------+
 tusb_desc_device_t const desc_device =
@@ -63,8 +47,6 @@ enum
 #define EPNUM_CDC_NOTIF   0x81
 #define EPNUM_CDC_OUT     0x02
 #define EPNUM_CDC_IN      0x82
-#define EPNUM_HID_KEYBOARD 0x83
-#define EPNUM_HID_MOUSE   0x84
 
 uint8_t const desc_fs_configuration[] =
 {
@@ -95,8 +77,6 @@ enum {
   STRID_PRODUCT,
   STRID_SERIAL,
   STRID_CDC_INTERFACE,
-  STRID_HID_KEYBOARD,
-  STRID_HID_MOUSE,
 };
 
 // array of pointer to string descriptors
@@ -104,11 +84,9 @@ char const* string_desc_arr [] =
 {
   (const char[]) { 0x09, 0x04 }, // 0: is supported language is English (0x0409)
   "Little Buddy",                     // 1: Manufacturer
-  "Little Buddy USB Host",            // 2: Product
+  "Little Buddy USB Device Test",     // 2: Product
   "123456",                      // 3: Serials, should use chip ID
   "Little Buddy CDC",            // 4: CDC Interface
-  "Little Buddy Keyboard",       // 5: HID Keyboard
-  "Little Buddy Mouse",          // 6: HID Mouse
 };
 
 static uint16_t _desc_str[32];
@@ -149,25 +127,4 @@ uint16_t const* tud_descriptor_string_cb(uint8_t index, uint16_t langid)
   _desc_str[0] = (TUSB_DESC_STRING << 8 ) | (2*chr_count + 2);
 
   return _desc_str;
-}
-
-//--------------------------------------------------------------------+
-// HID Report Descriptor Callbacks
-//--------------------------------------------------------------------+
-
-// Invoked when received GET HID REPORT DESCRIPTOR
-// Application return pointer to descriptor
-// Descriptor contents must exist long enough for transfer to complete
-uint8_t const * tud_hid_descriptor_report_cb(uint8_t itf)
-{
-  if (itf == ITF_NUM_HID_KEYBOARD)
-  {
-    return desc_hid_keyboard_report;
-  }
-  else if (itf == ITF_NUM_HID_MOUSE)
-  {
-    return desc_hid_mouse_report;
-  }
-  
-  return NULL;
 }
