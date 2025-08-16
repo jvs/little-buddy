@@ -107,55 +107,27 @@ int main() {
         if (display_ok && (now - last_display_update > 100)) {
             sh1107_clear(&display);
             
-            // Show version and current time (minutes since boot)
-            char header[32];
-            uint32_t minutes = now / 60000;
-            snprintf(header, sizeof(header), "LB v1.0 T+%lum", minutes);
-            sh1107_draw_string(&display, 0, 0, header);
+            char line[20];  // Shorter lines for small display
 
-            char line[32];  // Larger buffer to avoid truncation
-
-            // USB DEVICE DEBUG INFO
-            
-            // Device status
+            // Device mount status - this is the key diagnostic
             bool mounted = tud_mounted();
-            bool suspended = tud_suspended();
-            snprintf(line, sizeof(line), "DEV: %s %s", 
-                    mounted ? "MOUNT" : "NOMNT",
-                    suspended ? "SUSP" : "ACTV");
+            snprintf(line, sizeof(line), "DEV: %s", mounted ? "MOUNT" : "NOMNT");
+            sh1107_draw_string(&display, 0, 0, line);
+            
+            // HID readiness  
+            bool hid0_ready = tud_hid_n_ready(0);
+            snprintf(line, sizeof(line), "HID0: %s", hid0_ready ? "RDY" : "WAIT");
             sh1107_draw_string(&display, 0, 15, line);
             
-            // HID interface status  
-            bool hid0_ready = tud_hid_n_ready(0);
-            bool hid1_ready = tud_hid_n_ready(1);
-            snprintf(line, sizeof(line), "HID: IF0=%s IF1=%s", 
-                    hid0_ready ? "RDY" : "WAIT",
-                    hid1_ready ? "RDY" : "WAIT");
-            sh1107_draw_string(&display, 0, 30, line);
-            
-            // Combined forwarding status
-            snprintf(line, sizeof(line), "FWD: %s", hid0_ready ? "READY" : "WAIT");
-            sh1107_draw_string(&display, 0, 45, line);
-            
-            // Host event summary (one line)
+            // Host events
             if (last_event.type == USB_EVENT_MOUSE) {
-                snprintf(line, sizeof(line), "HOST: MSE DX=%d DY=%d B=%d",
-                        last_event.data.mouse.delta_x, last_event.data.mouse.delta_y, 
-                        last_event.data.mouse.buttons);
+                snprintf(line, sizeof(line), "HOST: MSE");
             } else if (last_event.type == USB_EVENT_KEYBOARD) {
-                snprintf(line, sizeof(line), "HOST: KBD K=%02X M=%02X", 
-                        last_event.data.keyboard.keycode, last_event.data.keyboard.modifier);
+                snprintf(line, sizeof(line), "HOST: KBD");
             } else {
-                snprintf(line, sizeof(line), "HOST: No events");
+                snprintf(line, sizeof(line), "HOST: NONE");
             }
-            sh1107_draw_string(&display, 0, 60, line);
-            
-            // Test status
-            uint32_t current_time = to_ms_since_boot(get_absolute_time());
-            uint32_t test_time_left = 3000 - (current_time - last_test_movement);
-            if (test_time_left > 3000) test_time_left = 0; // Handle wraparound
-            snprintf(line, sizeof(line), "TEST: %lums to next move", test_time_left);
-            sh1107_draw_string(&display, 0, 75, line);
+            sh1107_draw_string(&display, 0, 30, line);
 
             sh1107_display(&display);
             last_display_update = now;
