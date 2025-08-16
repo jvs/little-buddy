@@ -67,6 +67,7 @@ int main() {
     debug_printf("Little Buddy starting up...\n");
     
     uint32_t last_heartbeat = 0;
+    uint32_t last_test_movement = 0;
     
     while (true) {
         // Service USB host and device
@@ -182,8 +183,14 @@ int main() {
             last_display_update = now;
         }
 
-        // Heartbeat debug every 5 seconds
+        // Test mouse movement every 3 seconds (only if device is mounted)
         uint32_t now_ms = to_ms_since_boot(get_absolute_time());
+        if (tud_mounted() && (now_ms - last_test_movement > 3000)) {
+            usb_device_send_test_mouse_movement();
+            last_test_movement = now_ms;
+        }
+
+        // Heartbeat debug every 5 seconds
         if (now_ms - last_heartbeat > 5000) {
             debug_printf("Heartbeat: device mounted=%d\n", tud_mounted());
             last_heartbeat = now_ms;

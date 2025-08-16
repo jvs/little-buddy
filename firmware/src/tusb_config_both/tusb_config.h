@@ -3,6 +3,7 @@
 
 #define CFG_TUSB_RHPORT0_MODE (OPT_MODE_DEVICE | OPT_MODE_FULL_SPEED)
 #define BOARD_TUD_RHPORT 0
+#define BOARD_TUD_RHPORT 0
 
 #define CFG_TUSB_MEM_SECTION
 #define CFG_TUSB_MEM_ALIGN __attribute__((aligned(4)))
