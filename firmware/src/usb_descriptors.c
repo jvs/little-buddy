@@ -198,16 +198,21 @@ tusb_desc_device_t const desc_device =
     .bNumConfigurations = 0x01
 };
 
-// Access to debug counters from usb_device.cc
-extern void usb_device_increment_device_desc_calls(void);
-extern void usb_device_increment_config_desc_calls(void);
-extern void usb_device_increment_hid_desc_calls(void);
+// Debug counters for display
+static uint32_t g_device_desc_calls = 0;
+static uint32_t g_config_desc_calls = 0;
+static uint32_t g_hid_desc_calls = 0;
+
+// Getter functions for main.cc
+uint32_t usb_get_device_desc_calls(void) { return g_device_desc_calls; }
+uint32_t usb_get_config_desc_calls(void) { return g_config_desc_calls; }
+uint32_t usb_get_hid_desc_calls(void) { return g_hid_desc_calls; }
 
 // Invoked when received GET DEVICE DESCRIPTOR
 // Application return pointer to descriptor
 uint8_t const * tud_descriptor_device_cb(void)
 {
-  usb_device_increment_device_desc_calls();
+  g_device_desc_calls++;
   return (uint8_t const *) &desc_device;
 }
 
@@ -244,7 +249,7 @@ uint8_t const desc_fs_configuration[] =
 // Descriptor contents must exist long enough for transfer to complete
 uint8_t const * tud_descriptor_configuration_cb(uint8_t index)
 {
-  usb_device_increment_config_desc_calls();
+  g_config_desc_calls++;
   (void) index; // for multiple configurations
   return desc_fs_configuration;
 }
@@ -319,7 +324,7 @@ uint16_t const* tud_descriptor_string_cb(uint8_t index, uint16_t langid)
 // Descriptor contents must exist long enough for transfer to complete
 uint8_t const * tud_hid_descriptor_report_cb(uint8_t itf)
 {
-  usb_device_increment_hid_desc_calls();
+  g_hid_desc_calls++;
   if (itf == ITF_NUM_HID_KEYBOARD)
   {
     return desc_hid_keyboard_report;

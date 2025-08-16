@@ -12,10 +12,7 @@
 #define REPORT_ID_MOUSE 1
 #define REPORT_ID_KEYBOARD 2
 
-// Debug counters for display
-static uint32_t g_device_desc_calls = 0;
-static uint32_t g_config_desc_calls = 0;
-static uint32_t g_hid_desc_calls = 0;
+// Debug counter for mount callback
 static uint32_t g_mount_calls = 0;
 
 // Debug printf - now just a stub since no CDC
@@ -25,15 +22,8 @@ int debug_printf(const char* format, ...) {
     return 0;
 }
 
-// Getter and increment functions for display
-uint32_t usb_device_get_device_desc_calls(void) { return g_device_desc_calls; }
-uint32_t usb_device_get_config_desc_calls(void) { return g_config_desc_calls; }
-uint32_t usb_device_get_hid_desc_calls(void) { return g_hid_desc_calls; }
+// Getter function for display
 uint32_t usb_device_get_mount_calls(void) { return g_mount_calls; }
-
-void usb_device_increment_device_desc_calls(void) { g_device_desc_calls++; }
-void usb_device_increment_config_desc_calls(void) { g_config_desc_calls++; }
-void usb_device_increment_hid_desc_calls(void) { g_hid_desc_calls++; }
 
 void usb_device_init(void) {
     // Don't init here - will be done by unified tusb_init()

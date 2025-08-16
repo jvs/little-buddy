@@ -130,9 +130,9 @@ int main() {
             sh1107_draw_string(&display, 0, 30, line);
             
             // USB descriptor callback counts - this will tell us what's happening
-            uint32_t dev_calls = usb_device_get_device_desc_calls();
-            uint32_t cfg_calls = usb_device_get_config_desc_calls();
-            uint32_t hid_calls = usb_device_get_hid_desc_calls();
+            uint32_t dev_calls = usb_get_device_desc_calls();
+            uint32_t cfg_calls = usb_get_config_desc_calls();
+            uint32_t hid_calls = usb_get_hid_desc_calls();
             uint32_t mnt_calls = usb_device_get_mount_calls();
             
             snprintf(line, sizeof(line), "D:%ld C:%ld H:%ld", dev_calls, cfg_calls, hid_calls);
