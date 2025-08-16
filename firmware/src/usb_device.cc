@@ -2,6 +2,7 @@
 #include "tusb.h"
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 
 // Interface numbers (must match usb_descriptors.c)
 #define ITF_NUM_HID_KEYBOARD  0  
@@ -34,6 +35,10 @@ void usb_device_task(void) {
 void tud_mount_cb(void)
 {
     // Device is mounted and ready
+    debug_printf("USB Device mounted!\n");
+    
+    // Reset boot protocol state on mount (like hid-remapper does)
+    // This ensures proper state management for HID enumeration
 }
 
 // Invoked when device is unmounted
@@ -64,32 +69,85 @@ void tud_resume_cb(void)
 // Return zero will cause the stack to STALL request
 uint16_t tud_hid_get_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t report_type, uint8_t* buffer, uint16_t reqlen)
 {
-    // TODO implement if needed
-    (void) itf;
-    (void) report_id;
-    (void) report_type;
-    (void) buffer;
-    (void) reqlen;
+    // Handle GET_REPORT requests properly for device enumeration
+    debug_printf("tud_hid_get_report_cb itf=%d rid=%d type=%d len=%d\n", itf, report_id, report_type, reqlen);
+    
+    if (itf == ITF_NUM_HID_KEYBOARD) {
+        // For HID enumeration, we need to handle certain report requests
+        if (report_type == HID_REPORT_TYPE_FEATURE) {
+            // Handle feature reports (like resolution multiplier)
+            if (report_id == 99 && reqlen >= 1) { // REPORT_ID_MULTIPLIER
+                buffer[0] = 0x01; // Default resolution multiplier value
+                return 1;
+            }
+        } else if (report_type == HID_REPORT_TYPE_INPUT) {
+            // For input reports, return empty/default state
+            if (report_id == REPORT_ID_KEYBOARD && reqlen >= 17) {
+                memset(buffer, 0, 17); // Clear keyboard report
+                return 17;
+            } else if (report_id == REPORT_ID_MOUSE && reqlen >= 10) {
+                memset(buffer, 0, 10); // Clear mouse report  
+                return 10;
+            }
+        }
+    } else if (itf == ITF_NUM_HID_MOUSE) {
+        // Handle config/vendor interface requests
+        if (report_type == HID_REPORT_TYPE_FEATURE && reqlen > 0) {
+            memset(buffer, 0, reqlen); // Return zeros for config
+            return reqlen;
+        }
+    }
 
-    return 0;
+    return 0; // STALL for unsupported requests
 }
 
 // Invoked when received SET_REPORT control request or
 // received data on OUT endpoint ( Report ID = 0, Type = 0 )
 void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t report_type, uint8_t const* buffer, uint16_t bufsize)
 {
-    // TODO implement if needed for LEDs, etc.
-    (void) itf;
-    (void) report_id;
-    (void) report_type;
-    (void) buffer;
-    (void) bufsize;
+    // Handle SET_REPORT requests properly for device enumeration
+    debug_printf("tud_hid_set_report_cb itf=%d rid=%d type=%d size=%d\n", itf, report_id, report_type, bufsize);
+    
+    if (itf == ITF_NUM_HID_KEYBOARD) {
+        // Handle report ID extraction if needed (like hid-remapper does)
+        if ((report_id == 0) && (report_type == 0) && (bufsize > 0)) {
+            report_id = buffer[0];
+            buffer++;
+            bufsize--;
+        }
+        
+        // Handle specific reports
+        if (report_type == HID_REPORT_TYPE_FEATURE) {
+            if (report_id == 99 && bufsize >= 1) { // REPORT_ID_MULTIPLIER
+                // Store resolution multiplier value (though we don't use it)
+                debug_printf("Resolution multiplier set to: %d\n", buffer[0]);
+            }
+        } else if (report_type == HID_REPORT_TYPE_OUTPUT || (report_id == 98)) { // REPORT_ID_LEDS
+            // Handle LED report (caps lock, num lock, etc.)
+            if (bufsize >= 1) {
+                debug_printf("LED state set to: 0x%02X\n", buffer[0]);
+            }
+        }
+    } else if (itf == ITF_NUM_HID_MOUSE) {
+        // Handle config interface reports
+        if (report_type == HID_REPORT_TYPE_FEATURE) {
+            debug_printf("Config report received, size: %d\n", bufsize);
+            // Accept config data but don't need to do anything with it
+        }
+    }
 }
 
 // Missing HID callback that hid-remapper has
 void tud_hid_set_protocol_cb(uint8_t instance, uint8_t protocol) {
     // Handle HID boot protocol negotiation (required for proper enumeration)
-    debug_printf("tud_hid_set_protocol_cb %d %d\n", instance, protocol);
+    debug_printf("tud_hid_set_protocol_cb instance=%d protocol=%d\n", instance, protocol);
+    
+    // Track boot protocol state like hid-remapper does
+    static bool boot_protocol_keyboard = false;
+    boot_protocol_keyboard = (protocol == HID_PROTOCOL_BOOT);
+    
+    // This callback is critical for proper HID enumeration
+    // macOS and other systems may require this for device acceptance
 }
 
 //--------------------------------------------------------------------+
