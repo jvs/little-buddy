@@ -154,7 +154,7 @@ int main() {
             }
             
             // Show forwarding status
-            bool hid_ready = tud_hid_n_ready(0) && tud_hid_n_ready(1);  // Both keyboard and mouse interfaces
+            bool hid_ready = tud_hid_n_ready(0);  // Only keyboard interface (like hid-remapper)
             snprintf(line, sizeof(line), "FWD: %s", hid_ready ? "READY" : "WAIT");
             sh1107_draw_string(&display, 0, 75, line);
             
