@@ -69,10 +69,5 @@ pico_enable_stdio_usb(little_buddy 0)
 pico_enable_stdio_uart(little_buddy 0)
 
 pico_set_binary_type(little_buddy copy_to_ram)
-if(PICO_PLATFORM STREQUAL "rp2040")
-    pico_set_linker_script(little_buddy ${CMAKE_CURRENT_LIST_DIR}/little_buddy.ld)
-else()
-    message(FATAL_ERROR "Unknown PICO_PLATFORM.")
-endif()
 pico_add_extra_outputs(little_buddy)
 
