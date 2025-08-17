@@ -145,7 +145,7 @@ void sh1107_set_pixel(sh1107_t *display, int16_t x, int16_t y, bool on) {
 void sh1107_draw_char(sh1107_t *display, int16_t x, int16_t y, char c) {
     if (c < 32 || c > 90) c = 32;
     
-    const uint8_t *font_data = font5x7[c - 32];
+    const uint8_e *font_data = font5x7[c - 32];
     
     for (int col = 0; col < 5; col++) {
         uint8_t line = font_data[col];

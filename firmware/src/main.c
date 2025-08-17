@@ -83,7 +83,7 @@ int main() {
     // Show initial startup message
     if (display_ok) {
         sh1107_clear(&display);
-        sh1107_draw_string(&display, 2, 10, "STARTING...");
+        sh1107_draw_string(&display, 1, 10, "STARTING...");
         sh1107_display(&display);
         sleep_ms(500);
     }
@@ -110,8 +110,8 @@ int main() {
     // Show USB ready message
     if (display_ok) {
         sh1107_clear(&display);
-        sh1107_draw_string(&display, 2, 10, "USB DUAL MODE");
-        sh1107_draw_string(&display, 2, 25, "DEVICE + HOST");
+        sh1107_draw_string(&display, 1, 10, "USB DUAL MODE");
+        sh1107_draw_string(&display, 1, 25, "DEVICE + HOST");
         sh1107_display(&display);
     }
 
@@ -178,14 +178,14 @@ int main() {
                 
                 // Line 1: Device counts
                 snprintf(status_buf, sizeof(status_buf), "HID: %d (K:%d M:%d)", device_count, kbd_count, mouse_count);
-                sh1107_draw_string(&display, 2, 10, status_buf);
+                sh1107_draw_string(&display, 1, 10, status_buf);
                 
                 // Line 2: Last event
-                sh1107_draw_string(&display, 2, 25, last_event);
+                sh1107_draw_string(&display, 1, 25, last_event);
                 
                 // Line 3: CDC bytes for testing
                 snprintf(status_buf, sizeof(status_buf), "CDC: %lu B", byte_count);
-                sh1107_draw_string(&display, 2, 40, status_buf);
+                sh1107_draw_string(&display, 1, 40, status_buf);
                 
                 sh1107_display(&display);
             }
