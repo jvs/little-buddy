@@ -164,8 +164,8 @@ tusb_desc_device_t const desc_device = {
     .bDeviceSubClass    = MISC_SUBCLASS_COMMON,
     .bDeviceProtocol    = MISC_PROTOCOL_IAD,
     .bMaxPacketSize0    = CFG_TUD_ENDPOINT0_SIZE,
-    .idVendor           = 0xCafe,
-    .idProduct          = 0x4001,
+    .idVendor           = 0x1209,
+    .idProduct          = 0x0001,
     .bcdDevice          = 0x0100,
     .iManufacturer      = 0x01,
     .iProduct           = 0x02,
@@ -227,8 +227,8 @@ uint8_t const * tud_hid_descriptor_report_cb(uint8_t instance) {
 // String Descriptors
 char const* string_desc_arr [] = {
     (const char[]) { 0x09, 0x04 }, // 0: language
-    "Little Buddy",                // 1: Manufacturer
-    "USB Bridge Device",           // 2: Product
+    "Generic",                     // 1: Manufacturer
+    "USB Keyboard",                // 2: Product
     "123456",                      // 3: Serials
     "CDC Interface",               // 4: CDC Interface
     "HID Keyboard",                // 5: HID Keyboard Interface
@@ -354,20 +354,19 @@ void hid_task(void) {
 //--------------------------------------------------------------------+
 
 void send_keyboard_report(uint8_t modifier, uint8_t keycode) {
-    // Check if device is ready
-    if (!tud_hid_ready()) return;
+    // Check if keyboard instance is ready
+    if (!tud_hid_n_ready(0)) return;
 
     // Keyboard report format: [modifier, reserved, key1, key2, key3, key4, key5, key6]
-    uint8_t keyreport[8] = {0};
-    keyreport[0] = modifier;
-    keyreport[2] = keycode;
+    uint8_t keyreport[6] = {0};
+    keyreport[0] = keycode;
     
-    tud_hid_keyboard_report(HID_ITF_PROTOCOL_KEYBOARD, modifier, keyreport + 2);
+    tud_hid_n_keyboard_report(0, modifier, keyreport);
 }
 
 void send_mouse_report(int8_t delta_x, int8_t delta_y, uint8_t buttons) {
-    // Check if device is ready
-    if (!tud_hid_ready()) return;
+    // Check if mouse instance is ready
+    if (!tud_hid_n_ready(1)) return;
 
-    tud_hid_mouse_report(HID_ITF_PROTOCOL_MOUSE, buttons, delta_x, delta_y, 0, 0);
+    tud_hid_n_mouse_report(1, buttons, delta_x, delta_y, 0, 0);
 }
