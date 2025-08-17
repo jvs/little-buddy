@@ -64,6 +64,10 @@ int main() {
 
     static uint32_t byte_count = 0;
     char status_buf[32];
+    
+    // Non-blocking keyboard test state
+    static uint32_t keyboard_test_deadline = 0;
+    static bool keyboard_test_pending = false;
 
     while (1) {
         // TinyUSB device task
@@ -78,6 +82,16 @@ int main() {
 
         // HID host task for handling connected devices
         hid_task();
+        
+        // Check for pending keyboard test
+        if (keyboard_test_pending && time_us_32() >= keyboard_test_deadline) {
+            send_keyboard_report(0, HID_KEY_B);  // Press 'b'
+            sleep_ms(50);
+            send_keyboard_report(0, 0);          // Release 'b'
+            tud_cdc_write_str("SENT KEY 'B'\r\n");
+            tud_cdc_write_flush();
+            keyboard_test_pending = false;
+        }
 
         // Update display when we receive data
         if (byte_count != old_count && display_ok) {
@@ -135,16 +149,30 @@ uint32_t cdc_task(void) {
                     tud_cdc_write_str("MOUSE DOWN\r\n");
                     break;
                 case 'a':
-                    // Wait then send 'b' key
-                    sleep_ms(500);
-                    send_keyboard_report(0, HID_KEY_B);  // Press 'b'
-                    sleep_ms(50);
-                    send_keyboard_report(0, 0);          // Release 'b'
-                    tud_cdc_write_str("SENT KEY 'B'\r\n");
+                    // Schedule 'b' key to be sent in 3 seconds
+                    keyboard_test_deadline = time_us_32() + 3000000; // 3 seconds in microseconds
+                    keyboard_test_pending = true;
+                    tud_cdc_write_str("WILL SEND 'B' IN 3 SECONDS...\r\n");
+                    break;
+                case 'R':
+                    // Force USB reset
+                    tud_cdc_write_str("RESETTING USB...\r\n");
+                    tud_cdc_write_flush();
+                    sleep_ms(100);
+                    tud_disconnect();
+                    sleep_ms(1000);
+                    tud_connect();
+                    tud_cdc_write_str("USB RECONNECTED\r\n");
                     break;
                 default:
-                    // Send back normal response
-                    tud_cdc_write_str("GOT 1 BYTES\r\n");
+                    // Send back normal response with the actual character
+                    char response[32];
+                    if (c >= 32 && c <= 126) {
+                        snprintf(response, sizeof(response), "GOT '%c' (0x%02X)\r\n", c, c);
+                    } else {
+                        snprintf(response, sizeof(response), "GOT 0x%02X\r\n", c);
+                    }
+                    tud_cdc_write_str(response);
                     break;
             }
         }
