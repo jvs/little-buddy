@@ -4,10 +4,12 @@
 #include <pico/stdlib.h>
 #include <stdbool.h>
 #include <tusb.h>
+#include <pio_usb.h>
 
 #include "sh1107_display.h"
 
 uint32_t cdc_task(void);
+void hid_task(void);
 
 int main() {
     // Give everything time to power up properly.
@@ -39,13 +41,22 @@ int main() {
     // Initialize TinyUSB device stack
     tud_init(BOARD_TUD_RHPORT);
 
+    // Initialize PIO USB for host mode
+    pio_usb_configuration_t pio_cfg = PIO_USB_DEFAULT_CONFIG;
+    pio_cfg.pin_dp = PICO_DEFAULT_PIO_USB_DP_PIN;
+    tuh_configure(BOARD_TUH_RHPORT, TUH_CFGID_RPI_PIO_USB_CONFIGURATION, &pio_cfg);
+
+    // Initialize TinyUSB host stack
+    tuh_init(BOARD_TUH_RHPORT);
+
     // Wait a bit for USB to initialize
     sleep_ms(100);
 
     // Show USB ready message
     if (display_ok) {
         sh1107_clear(&display);
-        sh1107_draw_string(&display, 2, 10, "USB DEVICE READY");
+        sh1107_draw_string(&display, 2, 10, "USB DUAL MODE");
+        sh1107_draw_string(&display, 2, 25, "DEVICE + HOST");
         sh1107_display(&display);
     }
 
@@ -56,15 +67,21 @@ int main() {
         // TinyUSB device task
         tud_task();
 
+        // TinyUSB host task
+        tuh_task();
+
         // CDC task for handling serial communication
         uint32_t old_count = byte_count;
         byte_count += cdc_task();
-        
+
+        // HID host task for handling connected devices
+        hid_task();
+
         // Update display when we receive data
         if (byte_count != old_count && display_ok) {
             sh1107_clear(&display);
-            sh1107_draw_string(&display, 2, 10, "USB DEVICE READY");
-            snprintf(status_buf, sizeof(status_buf), "BYTES: %lu", byte_count);
+            sh1107_draw_string(&display, 2, 10, "USB DUAL MODE");
+            snprintf(status_buf, sizeof(status_buf), "DEV BYTES: %lu", byte_count);
             sh1107_draw_string(&display, 2, 25, status_buf);
             sh1107_display(&display);
         }
@@ -84,7 +101,7 @@ uint32_t cdc_task(void) {
         snprintf(response, sizeof(response), "GOT %lu BYTES\r\n", count);
         tud_cdc_write_str(response);
         tud_cdc_write_flush();
-        
+
         bytes_received = count;
     }
     return bytes_received;
@@ -169,4 +186,63 @@ uint16_t const* tud_descriptor_string_cb(uint8_t index, uint16_t langid) {
     _desc_str[0] = (TUSB_DESC_STRING << 8 ) | (2*chr_count + 2);
 
     return _desc_str;
+}
+
+//--------------------------------------------------------------------+
+// HOST MODE CALLBACKS
+//--------------------------------------------------------------------+
+
+void tuh_mount_cb(uint8_t dev_addr) {
+    char msg[64];
+    snprintf(msg, sizeof(msg), "HOST: Device attached, addr=%d\r\n", dev_addr);
+    tud_cdc_write_str(msg);
+    tud_cdc_write_flush();
+}
+
+void tuh_umount_cb(uint8_t dev_addr) {
+    char msg[64];
+    snprintf(msg, sizeof(msg), "HOST: Device removed, addr=%d\r\n", dev_addr);
+    tud_cdc_write_str(msg);
+    tud_cdc_write_flush();
+}
+
+void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_report, uint16_t desc_len) {
+    char msg[64];
+    snprintf(msg, sizeof(msg), "HOST: HID mounted, addr=%d inst=%d\r\n", dev_addr, instance);
+    tud_cdc_write_str(msg);
+    tud_cdc_write_flush();
+
+    // Request to receive report
+    if (!tuh_hid_receive_report(dev_addr, instance)) {
+        tud_cdc_write_str("HOST: Error requesting HID report\r\n");
+        tud_cdc_write_flush();
+    }
+}
+
+void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
+    char msg[64];
+    snprintf(msg, sizeof(msg), "HOST: HID unmounted, addr=%d inst=%d\r\n", dev_addr, instance);
+    tud_cdc_write_str(msg);
+    tud_cdc_write_flush();
+}
+
+void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len) {
+    char msg[128];
+    int offset = snprintf(msg, sizeof(msg), "HOST: HID data [%d,%d]: ", dev_addr, instance);
+
+    for(uint16_t i = 0; i < len && offset < sizeof(msg) - 4; i++) {
+        offset += snprintf(msg + offset, sizeof(msg) - offset, "%02X ", report[i]);
+    }
+    offset += snprintf(msg + offset, sizeof(msg) - offset, "\r\n");
+
+    tud_cdc_write_str(msg);
+    tud_cdc_write_flush();
+
+    // Continue to request next report
+    tuh_hid_receive_report(dev_addr, instance);
+}
+
+void hid_task(void) {
+    // This function is called from main loop
+    // HID host processing is handled in the callbacks above
 }
