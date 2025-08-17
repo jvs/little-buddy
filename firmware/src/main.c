@@ -525,33 +525,24 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
             hid_devices[i].dev_addr == dev_addr &&
             hid_devices[i].instance == instance) {
             
-            // Handle trackpoint keyboard reports (based on Linux hid-lenovo.c)
+            // Handle keyboard and mouse reports
             if (len == 8) {
-                // Debug: show first byte to see what we're getting
-                static uint8_t last_first_byte = 0xFF;
-                if (report[0] != last_first_byte) {
-                    last_first_byte = report[0];
-                    snprintf(last_event, sizeof(last_event), "FirstByte: 0x%02X", report[0]);
-                }
+                // Keyboard report: [modifier, reserved, key1, key2, key3, key4, key5, key6]
+                uint8_t key = report[2]; // First key
                 
-                // Check for trackpoint data embedded in keyboard report
-                // Linux kernel checks: report[0] == 0x01 indicates trackpoint data
-                if (report[0] == 0x01) {
-                    // Trackpoint report format (from Linux kernel):
-                    // [0x01, buttons, x_low, y_low, x_high, y_high, ?, ?]
-                    uint8_t buttons = report[1];
-                    int16_t delta_x = (int8_t)report[2] | ((report[4] & 0x0F) << 8);
-                    int16_t delta_y = (int8_t)report[3] | ((report[5] & 0x0F) << 8);
-                    
-                    snprintf(last_event, sizeof(last_event), "Track: btn=%d x=%d y=%d", buttons, delta_x, delta_y);
-                } else if (report[0] == 0x00) {
-                    // Normal keyboard report: [modifier, reserved, key1, key2, key3, key4, key5, key6]
-                    uint8_t key = report[2]; // First key
-                    
-                    if (key != 0 && key != last_key) {
-                        last_key = key;
-                        snprintf(last_event, sizeof(last_event), "Key: 0x%02X", key);
-                    }
+                if (key != 0 && key != last_key) {
+                    last_key = key;
+                    snprintf(last_event, sizeof(last_event), "Key: 0x%02X", key);
+                }
+            } else if (len == 6 && report[0] == 0x01) {
+                // Trackpoint mouse report: [0x01, buttons, x, y, wheel, ?]
+                uint8_t buttons = report[1];
+                int8_t delta_x = (int8_t)report[2];
+                int8_t delta_y = (int8_t)report[3];
+                int8_t wheel = (int8_t)report[4];
+                
+                if (buttons != 0 || delta_x != 0 || delta_y != 0 || wheel != 0) {
+                    snprintf(last_event, sizeof(last_event), "Mouse: btn=%d x=%d y=%d w=%d", buttons, delta_x, delta_y, wheel);
                 }
             }
             break;
