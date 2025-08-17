@@ -136,14 +136,12 @@ int main() {
             snprintf(line, sizeof(line), "TUD: %lu/%lu", tud_calls, suspend_calls);
             sh1107_draw_string(&display, 0, 30, line);
             
-            // Host events
-            if (last_event.type == USB_EVENT_MOUSE) {
-                snprintf(line, sizeof(line), "HOST: MSE");
-            } else if (last_event.type == USB_EVENT_KEYBOARD) {
-                snprintf(line, sizeof(line), "HOST: KBD");
-            } else {
-                snprintf(line, sizeof(line), "HOST: NONE");
-            }
+            // Build version check - should show if PIO USB is disabled
+            #ifdef CFG_TUH_RPI_PIO_USB
+                snprintf(line, sizeof(line), "BUILD: PIO");
+            #else
+                snprintf(line, sizeof(line), "BUILD: NO-PIO");
+            #endif
             sh1107_draw_string(&display, 0, 45, line);
             
 
