@@ -7,7 +7,7 @@
 
 #include "sh1107_display.h"
 
-void cdc_task(void);
+uint32_t cdc_task(void);
 
 int main() {
     // Give everything time to power up properly.
@@ -49,26 +49,45 @@ int main() {
         sh1107_display(&display);
     }
 
+    static uint32_t byte_count = 0;
+    char status_buf[32];
+
     while (1) {
         // TinyUSB device task
         tud_task();
 
         // CDC task for handling serial communication
-        cdc_task();
+        uint32_t old_count = byte_count;
+        byte_count += cdc_task();
+        
+        // Update display when we receive data
+        if (byte_count != old_count && display_ok) {
+            sh1107_clear(&display);
+            sh1107_draw_string(&display, 5, 10, "USB DEVICE READY");
+            snprintf(status_buf, sizeof(status_buf), "BYTES: %lu", byte_count);
+            sh1107_draw_string(&display, 5, 25, status_buf);
+            sh1107_display(&display);
+        }
     }
 
     return 0;
 }
 
-void cdc_task(void) {
+uint32_t cdc_task(void) {
+    uint32_t bytes_received = 0;
     if (tud_cdc_available()) {
         uint8_t buf[64];
         uint32_t count = tud_cdc_read(buf, sizeof(buf));
 
-        // Echo back what we received
-        tud_cdc_write(buf, count);
+        // Send back a clear response
+        char response[64];
+        snprintf(response, sizeof(response), "GOT %lu BYTES\r\n", count);
+        tud_cdc_write_str(response);
         tud_cdc_write_flush();
+        
+        bytes_received = count;
     }
+    return bytes_received;
 }
 
 // Device Descriptor
