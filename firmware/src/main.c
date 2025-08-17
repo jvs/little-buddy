@@ -58,6 +58,9 @@ bool keyboard_test_pending = false;
 static char last_event[32] = "None";
 static uint8_t last_key = 0;
 
+// Debug control
+static bool debug_raw_reports = false;
+
 int main() {
     // Give everything time to power up properly.
     sleep_ms(2000);
@@ -246,6 +249,24 @@ uint32_t cdc_task(void) {
                     sleep_ms(10);
                     send_keyboard_report(0, 0);  // Send again to be sure
                     tud_cdc_write_str("CLEARED ALL KEYS\r\n");
+                    break;
+                case 'D':
+                    // Toggle debug raw reports
+                    debug_raw_reports = !debug_raw_reports;
+                    if (debug_raw_reports) {
+                        tud_cdc_write_str("DEBUG: Raw report dumping ON\r\n");
+                    } else {
+                        tud_cdc_write_str("DEBUG: Raw report dumping OFF\r\n");
+                    }
+                    break;
+                case 'H':
+                    // Help
+                    tud_cdc_write_str("COMMANDS:\r\n");
+                    tud_cdc_write_str("  l/r/u/d - test mouse movement\r\n");
+                    tud_cdc_write_str("  a - test keyboard (sends 'b')\r\n");
+                    tud_cdc_write_str("  c - clear stuck keys\r\n");
+                    tud_cdc_write_str("  D - toggle raw HID report debugging\r\n");
+                    tud_cdc_write_str("  H - show this help\r\n");
                     break;
                 default:
                     // Send back normal response with the actual character
@@ -472,6 +493,20 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
 }
 
 void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len) {
+    // Debug: dump raw reports if enabled
+    if (debug_raw_reports) {
+        char debug_msg[128];
+        int offset = snprintf(debug_msg, sizeof(debug_msg), "RAW [%d,%d] len=%d: ", dev_addr, instance, len);
+        
+        for (uint16_t i = 0; i < len && offset < sizeof(debug_msg) - 4; i++) {
+            offset += snprintf(debug_msg + offset, sizeof(debug_msg) - offset, "%02X ", report[i]);
+        }
+        offset += snprintf(debug_msg + offset, sizeof(debug_msg) - offset, "\r\n");
+        
+        tud_cdc_write_str(debug_msg);
+        tud_cdc_write_flush();
+    }
+
     // Find the device info
     for (int i = 0; i < MAX_HID_DEVICES; i++) {
         if (hid_devices[i].is_connected &&
