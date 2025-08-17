@@ -54,6 +54,10 @@ void parse_hid_descriptor(uint8_t dev_addr, uint8_t instance, const uint8_t* des
 uint32_t keyboard_test_deadline = 0;
 bool keyboard_test_pending = false;
 
+// Global variables for display updates
+static char last_event[32] = "None";
+static uint8_t last_key = 0;
+
 int main() {
     // Give everything time to power up properly.
     sleep_ms(2000);
@@ -120,7 +124,6 @@ int main() {
         tuh_task();
 
         // CDC task for handling serial communication
-        uint32_t old_count = byte_count;
         byte_count += cdc_task();
 
         // HID host task for handling connected devices
@@ -488,10 +491,6 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
     }
 }
 
-// Global variables for display updates
-static char last_event[32] = "None";
-static uint8_t last_key = 0;
-
 void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len) {
     // Find the device info
     for (int i = 0; i < MAX_HID_DEVICES; i++) {
@@ -502,7 +501,6 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
             // Parse based on what we found in the descriptor
             if (hid_devices[i].has_keyboard && len == 8) {
                 // Keyboard report: [modifier, reserved, key1, key2, key3, key4, key5, key6]
-                uint8_t modifier = report[0];
                 uint8_t key = report[2]; // First key
                 
                 if (key != 0 && key != last_key) {
