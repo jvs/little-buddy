@@ -80,7 +80,9 @@ int main() {
     // Initialize NeoPixel
     bool neopixel_ok = neopixel_init();
     if (neopixel_ok) {
-        neopixel_set_status(NEOPIXEL_STATUS_STARTING);
+        // Test basic functionality first
+        neopixel_set_color(255, 255, 0); // Yellow for starting
+        sleep_ms(1000);
     }
 
     // Initialize display (optional - may not be present)
@@ -116,7 +118,7 @@ int main() {
 
     // Show USB ready message and update NeoPixel
     if (neopixel_ok) {
-        neopixel_set_status(NEOPIXEL_STATUS_USB_READY);
+        neopixel_set_color(0, 0, 255); // Blue for USB ready
     }
     
     if (display_ok) {
@@ -199,9 +201,13 @@ int main() {
                 // Line 2: Last event
                 sh1107_draw_string(&display, 1, 25, last_event);
                 
-                // Line 3: CDC bytes for testing
+                // Line 3: NeoPixel status
+                const char* np_status = neopixel_ok ? "NP: OK" : "NP: FAIL";
+                sh1107_draw_string(&display, 1, 40, np_status);
+                
+                // Line 4: CDC bytes for testing
                 snprintf(status_buf, sizeof(status_buf), "CDC: %lu B", byte_count);
-                sh1107_draw_string(&display, 1, 40, status_buf);
+                sh1107_draw_string(&display, 1, 55, status_buf);
                 
                 sh1107_display(&display);
             }
@@ -302,6 +308,15 @@ uint32_t cdc_task(void) {
                     neopixel_off();
                     tud_cdc_write_str("NEOPIXEL OFF\r\n");
                     break;
+                case 'p':
+                    // Simple NeoPixel test - just red
+                    if (neopixel_ok) {
+                        neopixel_set_color(255, 0, 0);
+                        tud_cdc_write_str("NEOPIXEL: RED\r\n");
+                    } else {
+                        tud_cdc_write_str("NEOPIXEL: NOT INITIALIZED\r\n");
+                    }
+                    break;
                 case 'H':
                     // Help
                     tud_cdc_write_str("COMMANDS:\r\n");
@@ -310,6 +325,7 @@ uint32_t cdc_task(void) {
                     tud_cdc_write_str("  c - clear stuck keys\r\n");
                     tud_cdc_write_str("  n - test NeoPixel colors\r\n");
                     tud_cdc_write_str("  o - turn off NeoPixel\r\n");
+                    tud_cdc_write_str("  p - simple red NeoPixel test\r\n");
                     tud_cdc_write_str("  D - toggle raw HID report debugging\r\n");
                     tud_cdc_write_str("  S - show connected devices\r\n");
                     tud_cdc_write_str("  H - show this help\r\n");
@@ -526,7 +542,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
     tuh_hid_receive_report(dev_addr, instance);
     
     // Update NeoPixel to show device detected
-    neopixel_set_status(NEOPIXEL_STATUS_DEVICE_DETECTED);
+    neopixel_set_color(0, 255, 0); // Green for device detected
 }
 
 void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {

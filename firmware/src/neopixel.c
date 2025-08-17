@@ -42,7 +42,18 @@ static inline void put_pixel(uint32_t pixel_grb) {
 }
 
 bool neopixel_init(void) {
-    // Check if we can claim a state machine
+    // Try to find an available state machine
+    neopixel_sm = pio_claim_unused_sm(neopixel_pio, false);
+    if (neopixel_sm == -1) {
+        // Try PIO1 if PIO0 is full
+        neopixel_pio = pio1;
+        neopixel_sm = pio_claim_unused_sm(neopixel_pio, false);
+        if (neopixel_sm == -1) {
+            return false;
+        }
+    }
+    
+    // Check if we can add the program
     if (!pio_can_add_program(neopixel_pio, &ws2812_program)) {
         return false;
     }
