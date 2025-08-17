@@ -24,15 +24,26 @@ int main() {
     sh1107_t display;
     bool display_ok = sh1107_init(&display, i2c1);
 
-    // Show startup message
+    // Show initial startup message
+    if (display_ok) {
+        sh1107_clear(&display);
+        sh1107_draw_string(&display, 5, 10, "STARTING...");
+        sh1107_display(&display);
+        sleep_ms(500);
+    }
+
+    // Initialize TinyUSB device stack
+    tud_init(BOARD_TUD_RHPORT);
+
+    // Wait a bit for USB to initialize
+    sleep_ms(100);
+
+    // Show USB ready message
     if (display_ok) {
         sh1107_clear(&display);
         sh1107_draw_string(&display, 5, 10, "USB DEVICE READY");
         sh1107_display(&display);
     }
-
-    // Initialize TinyUSB device stack
-    tud_init(BOARD_TUD_RHPORT);
 
     while (1) {
         // TinyUSB device task
