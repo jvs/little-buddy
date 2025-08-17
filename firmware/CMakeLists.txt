@@ -21,17 +21,8 @@ check_and_add_pico_pio_usb_support()
 add_compile_options(-Wall)
 
 
-add_executable(little_buddy
-    src/main.c
-    src/red_led.c
-    src/interval_override.c
-    src/sh1107_display.c
-    src/usb_events.c
-    src/usb_host.c
-    src/hid_parser.c
-    src/usb_device.c
-    src/usb_descriptors.c
-)
+file(GLOB SOURCES "src/*.c")
+add_executable(little_buddy ${SOURCES})
 
 
 target_include_directories(little_buddy PRIVATE
