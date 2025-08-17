@@ -80,14 +80,6 @@ int main() {
     gpio_pull_up(2);
     gpio_pull_up(3);
 
-    // Initialize NeoPixel
-    neopixel_ok = neopixel_init();
-    if (neopixel_ok) {
-        // Test basic functionality first
-        neopixel_set_color(255, 255, 0); // Yellow for starting
-        sleep_ms(1000);
-    }
-
     // Initialize display (optional - may not be present)
     sh1107_t display;
     bool display_ok = sh1107_init(&display, i2c1);
@@ -98,6 +90,34 @@ int main() {
         sh1107_draw_string(&display, 1, 10, "STARTING...");
         sh1107_display(&display);
         sleep_ms(500);
+    }
+
+    // Update display before NeoPixel init
+    if (display_ok) {
+        sh1107_clear(&display);
+        sh1107_draw_string(&display, 1, 10, "INIT NEOPIXEL...");
+        sh1107_display(&display);
+    }
+
+    // Initialize NeoPixel
+    neopixel_ok = neopixel_init();
+    
+    // Update display with result
+    if (display_ok) {
+        sh1107_clear(&display);
+        if (neopixel_ok) {
+            sh1107_draw_string(&display, 1, 10, "NP: OK");
+            sh1107_draw_string(&display, 1, 25, "TESTING...");
+        } else {
+            sh1107_draw_string(&display, 1, 10, "NP: FAILED");
+        }
+        sh1107_display(&display);
+    }
+    
+    if (neopixel_ok) {
+        // Test basic functionality first
+        neopixel_set_color(255, 255, 0); // Yellow for starting
+        sleep_ms(1000);
     }
 
     // Initialize Boot button (GPIO 23 on RP2040)
