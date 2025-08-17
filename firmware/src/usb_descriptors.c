@@ -1,3 +1,4 @@
+#include "tusb_config.h"
 #include "tusb.h"
 
 // Forward declarations for debug functions
