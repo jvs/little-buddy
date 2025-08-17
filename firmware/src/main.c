@@ -184,7 +184,7 @@ int main() {
                 sh1107_draw_string(&display, 2, 25, last_event);
                 
                 // Line 3: CDC bytes for testing
-                snprintf(status_buf, sizeof(status_buf), "CDC: %lu bytes", byte_count);
+                snprintf(status_buf, sizeof(status_buf), "CDC: %lu B", byte_count);
                 sh1107_draw_string(&display, 2, 40, status_buf);
                 
                 sh1107_display(&display);
@@ -532,7 +532,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
                 
                 if (key != 0 && key != last_key) {
                     last_key = key;
-                    snprintf(last_event, sizeof(last_event), "Key: 0x%02X", key);
+                    snprintf(last_event, sizeof(last_event), "K: %02X", key);
                 }
             } else if (len == 6 && report[0] == 0x01) {
                 // Trackpoint mouse report: [0x01, buttons, x, y, wheel, ?]
@@ -542,7 +542,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
                 int8_t wheel = (int8_t)report[4];
                 
                 if (buttons != 0 || delta_x != 0 || delta_y != 0 || wheel != 0) {
-                    snprintf(last_event, sizeof(last_event), "Mouse: btn=%d x=%d y=%d w=%d", buttons, delta_x, delta_y, wheel);
+                    snprintf(last_event, sizeof(last_event), "M: B=%d X=%d Y=%d W=%d", buttons, delta_x, delta_y, wheel);
                 }
             }
             break;
