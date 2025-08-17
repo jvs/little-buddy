@@ -177,6 +177,16 @@ uint8_t const * tud_descriptor_device_cb(void) {
     return (uint8_t const *) &desc_device;
 }
 
+// HID Report Descriptor for Keyboard
+uint8_t const desc_hid_report_keyboard[] = {
+    TUD_HID_REPORT_DESC_KEYBOARD()
+};
+
+// HID Report Descriptor for Mouse
+uint8_t const desc_hid_report_mouse[] = {
+    TUD_HID_REPORT_DESC_MOUSE()
+};
+
 // Configuration Descriptor
 enum {
     ITF_NUM_CDC = 0,
@@ -204,16 +214,6 @@ uint8_t const * tud_descriptor_configuration_cb(uint8_t index) {
     (void) index;
     return desc_configuration;
 }
-
-// HID Report Descriptor for Keyboard
-uint8_t const desc_hid_report_keyboard[] = {
-    TUD_HID_REPORT_DESC_KEYBOARD()
-};
-
-// HID Report Descriptor for Mouse
-uint8_t const desc_hid_report_mouse[] = {
-    TUD_HID_REPORT_DESC_MOUSE()
-};
 
 // Invoked when received GET HID REPORT DESCRIPTOR request
 uint8_t const * tud_hid_descriptor_report_cb(uint8_t instance) {
