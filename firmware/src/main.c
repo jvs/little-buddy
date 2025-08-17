@@ -31,7 +31,7 @@ int main() {
     // Show initial startup message
     if (display_ok) {
         sh1107_clear(&display);
-        sh1107_draw_string(&display, 5, 10, "STARTING...");
+        sh1107_draw_string(&display, 2, 10, "STARTING...");
         sh1107_display(&display);
         sleep_ms(500);
     }
@@ -45,7 +45,7 @@ int main() {
     // Show USB ready message
     if (display_ok) {
         sh1107_clear(&display);
-        sh1107_draw_string(&display, 5, 10, "USB DEVICE READY");
+        sh1107_draw_string(&display, 2, 10, "USB DEVICE READY");
         sh1107_display(&display);
     }
 
@@ -63,9 +63,9 @@ int main() {
         // Update display when we receive data
         if (byte_count != old_count && display_ok) {
             sh1107_clear(&display);
-            sh1107_draw_string(&display, 5, 10, "USB DEVICE READY");
+            sh1107_draw_string(&display, 2, 10, "USB DEVICE READY");
             snprintf(status_buf, sizeof(status_buf), "BYTES: %lu", byte_count);
-            sh1107_draw_string(&display, 5, 25, status_buf);
+            sh1107_draw_string(&display, 2, 25, status_buf);
             sh1107_display(&display);
         }
     }
