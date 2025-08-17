@@ -40,6 +40,11 @@ int main() {
         sleep_ms(500);
     }
 
+    // Initialize Boot button (GPIO 23 on RP2040)
+    gpio_init(23);
+    gpio_set_dir(23, GPIO_IN);
+    gpio_pull_up(23);  // Boot button pulls to ground when pressed
+
     // Initialize TinyUSB device stack
     tud_init(BOARD_TUD_RHPORT);
 
@@ -92,6 +97,15 @@ int main() {
             tud_cdc_write_flush();
             keyboard_test_pending = false;
         }
+        
+        // Check Boot button (GPIO 23, active low)
+        static bool boot_button_last = true;
+        bool boot_button_now = gpio_get(23);
+        if (boot_button_last && !boot_button_now) {  // Button press (falling edge)
+            tud_cdc_write_str("BOOT BUTTON PRESSED!\r\n");
+            tud_cdc_write_flush();
+        }
+        boot_button_last = boot_button_now;
 
         // Update display when we receive data
         if (byte_count != old_count && display_ok) {
