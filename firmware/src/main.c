@@ -357,16 +357,16 @@ void send_keyboard_report(uint8_t modifier, uint8_t keycode) {
     // Check if keyboard instance is ready
     if (!tud_hid_n_ready(0)) return;
 
-    // Keyboard report format: [modifier, reserved, key1, key2, key3, key4, key5, key6]
+    // Keyboard report format: [key1, key2, key3, key4, key5, key6]
     uint8_t keyreport[6] = {0};
     keyreport[0] = keycode;
     
-    tud_hid_n_keyboard_report(0, modifier, keyreport);
+    tud_hid_n_keyboard_report(0, 0, modifier, keyreport);
 }
 
 void send_mouse_report(int8_t delta_x, int8_t delta_y, uint8_t buttons) {
     // Check if mouse instance is ready
     if (!tud_hid_n_ready(1)) return;
 
-    tud_hid_n_mouse_report(1, buttons, delta_x, delta_y, 0, 0);
+    tud_hid_n_mouse_report(1, 0, buttons, delta_x, delta_y, 0, 0);
 }
