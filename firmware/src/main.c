@@ -57,7 +57,7 @@ int main() {
     
     // Match hid-remapper sequence exactly: board_init() THEN PIO USB THEN tusb_init()
     board_init();
-    configure_pio_usb();  // This matches hid-remapper's extra_init() placement
+    // configure_pio_usb();  // This matches hid-remapper's extra_init() placement
     tusb_init();
     
     // Register SOF handler for device stack - critical for dual USB operation
