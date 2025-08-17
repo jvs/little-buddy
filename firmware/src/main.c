@@ -411,7 +411,58 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
     // Parse the HID descriptor to understand the device
     tud_cdc_write_str("HOST: About to parse descriptor...\r\n");
     tud_cdc_write_flush();
-    parse_hid_descriptor(dev_addr, instance, desc_report, desc_len);
+    
+    // Parse descriptor directly using the device_slot we just found
+    if (device_slot >= 0) {
+        tud_cdc_write_str("HOST: Parsing HID descriptor...\r\n");
+        
+        uint16_t pos = 0;
+        uint8_t current_usage_page = 0;
+        
+        while (pos < desc_len) {
+            uint8_t item = desc_report[pos];
+            uint8_t size = item & 0x03;
+            pos++; // Move past the item byte
+            
+            // Extract data based on size
+            uint32_t data = 0;
+            for (int i = 0; i < size; i++) {
+                if (pos + i < desc_len) {
+                    data |= (desc_report[pos + i] << (i * 8));
+                }
+            }
+            pos += size;
+            
+            // Parse based on tag
+            switch (item & 0xFC) { // Mask out size bits
+                case 0x05: // Usage Page
+                    current_usage_page = data;
+                    break;
+                    
+                case 0x09: // Usage
+                    // Check for keyboard or mouse usage
+                    if (current_usage_page == 0x01) { // Generic Desktop
+                        if (data == 0x06) { // Keyboard
+                            hid_devices[device_slot].has_keyboard = true;
+                            tud_cdc_write_str("HOST: Found KEYBOARD usage\r\n");
+                        } else if (data == 0x02 || data == 0x01) { // Mouse or Pointer
+                            hid_devices[device_slot].has_mouse = true;
+                            tud_cdc_write_str("HOST: Found MOUSE usage\r\n");
+                        }
+                    } else if (current_usage_page == 0x07) { // Keyboard page
+                        hid_devices[device_slot].has_keyboard = true;
+                        tud_cdc_write_str("HOST: Found KEYBOARD usage page\r\n");
+                    }
+                    break;
+            }
+        }
+        
+        char parse_msg[64];
+        snprintf(parse_msg, sizeof(parse_msg), "HOST: Parsed - kbd=%d mouse=%d\r\n",
+                hid_devices[device_slot].has_keyboard, hid_devices[device_slot].has_mouse);
+        tud_cdc_write_str(parse_msg);
+        tud_cdc_write_flush();
+    }
 
     uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
     char msg[128];
