@@ -20,8 +20,21 @@ check_and_add_pico_pio_usb_support()
 
 add_compile_options(-Wall)
 
-file(GLOB SOURCES "src/*.c")
-add_executable(little_buddy ${SOURCES})
+add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-std=c++17>)
+
+
+
+add_executable(little_buddy
+    src/main.c
+    src/red_led.c
+    src/interval_override.c
+    src/sh1107_display.c
+    src/usb_events.c
+    src/usb_host.c
+    src/hid_parser.c
+    src/usb_device.c
+    src/usb_descriptors.c
+)
 
 
 target_include_directories(little_buddy PRIVATE
@@ -35,6 +48,7 @@ target_link_libraries(little_buddy
     pico_unique_id
     hardware_pio
     hardware_dma
+    hardware_flash
     hardware_i2c
     tinyusb_device
     tinyusb_host
@@ -46,4 +60,6 @@ target_link_libraries(little_buddy
 pico_enable_stdio_usb(little_buddy 0)
 pico_enable_stdio_uart(little_buddy 0)
 
+pico_set_binary_type(little_buddy copy_to_ram)
 pico_add_extra_outputs(little_buddy)
+
