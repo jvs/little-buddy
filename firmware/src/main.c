@@ -91,10 +91,15 @@ int main() {
         
         // Check for pending keyboard test
         if (keyboard_test_pending && time_us_32() >= keyboard_test_deadline) {
+            tud_cdc_write_str("PRESSING 'B'...\r\n");
+            tud_cdc_write_flush();
             send_keyboard_report(0, HID_KEY_B);  // Press 'b'
-            sleep_ms(50);
+            sleep_ms(100);  // Longer press duration
+            tud_cdc_write_str("RELEASING 'B'...\r\n");
+            tud_cdc_write_flush();
             send_keyboard_report(0, 0);          // Release 'b'
-            tud_cdc_write_str("SENT KEY 'B'\r\n");
+            sleep_ms(100);  // Ensure release is processed
+            tud_cdc_write_str("KEY 'B' COMPLETE\r\n");
             tud_cdc_write_flush();
             keyboard_test_pending = false;
         }
@@ -169,15 +174,12 @@ uint32_t cdc_task(void) {
                     keyboard_test_pending = true;
                     tud_cdc_write_str("WILL SEND 'B' IN 3 SECONDS...\r\n");
                     break;
-                case 'R':
-                    // Force USB reset
-                    tud_cdc_write_str("RESETTING USB...\r\n");
-                    tud_cdc_write_flush();
-                    sleep_ms(100);
-                    tud_disconnect();
-                    sleep_ms(1000);
-                    tud_connect();
-                    tud_cdc_write_str("USB RECONNECTED\r\n");
+                case 'c':
+                    // Emergency: clear all keys
+                    send_keyboard_report(0, 0);  // Release everything
+                    sleep_ms(10);
+                    send_keyboard_report(0, 0);  // Send again to be sure
+                    tud_cdc_write_str("CLEARED ALL KEYS\r\n");
                     break;
                 default:
                     // Send back normal response with the actual character
