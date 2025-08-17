@@ -62,6 +62,9 @@ static uint8_t last_key = 0;
 // Debug control
 static bool debug_raw_reports = false;
 
+// NeoPixel status
+static bool neopixel_ok = false;
+
 int main() {
     // Give everything time to power up properly.
     sleep_ms(2000);
@@ -78,7 +81,7 @@ int main() {
     gpio_pull_up(3);
 
     // Initialize NeoPixel
-    bool neopixel_ok = neopixel_init();
+    neopixel_ok = neopixel_init();
     if (neopixel_ok) {
         // Test basic functionality first
         neopixel_set_color(255, 255, 0); // Yellow for starting
