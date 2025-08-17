@@ -130,9 +130,10 @@ int main() {
             snprintf(line, sizeof(line), "DESC: %lu/%lu", dev_calls, cfg_calls);
             sh1107_draw_string(&display, 0, 15, line);
             
-            // HID readiness  
-            bool hid0_ready = tud_hid_n_ready(0);
-            snprintf(line, sizeof(line), "HID0: %s", hid0_ready ? "RDY" : "WAIT");
+            // TinyUSB device stack activity
+            uint32_t tud_calls = usb_device_get_tud_task_calls();
+            uint32_t suspend_calls = usb_device_get_suspend_calls();
+            snprintf(line, sizeof(line), "TUD: %lu/%lu", tud_calls, suspend_calls);
             sh1107_draw_string(&display, 0, 30, line);
             
             // Host events

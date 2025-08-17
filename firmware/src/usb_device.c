@@ -13,8 +13,11 @@
 #define REPORT_ID_MOUSE 1
 #define REPORT_ID_KEYBOARD 2
 
-// Debug counter for mount callback
+// Debug counters for TinyUSB device stack activity
 static uint32_t g_mount_calls = 0;
+static uint32_t g_suspend_calls = 0;
+static uint32_t g_resume_calls = 0;
+static uint32_t g_tud_task_calls = 0;
 
 // Debug printf - now just a stub since no CDC
 int debug_printf(const char* format, ...) {
@@ -23,14 +26,17 @@ int debug_printf(const char* format, ...) {
     return 0;
 }
 
-// Getter function for display
+// Getter functions for display debugging
 uint32_t usb_device_get_mount_calls(void) { return g_mount_calls; }
+uint32_t usb_device_get_suspend_calls(void) { return g_suspend_calls; }
+uint32_t usb_device_get_tud_task_calls(void) { return g_tud_task_calls; }
 
 void usb_device_init(void) {
     // Don't init here - will be done by unified tusb_init()
 }
 
 void usb_device_task(void) {
+    g_tud_task_calls++;
     tud_task();
 }
 
@@ -61,11 +67,13 @@ void tud_umount_cb(void)
 void tud_suspend_cb(bool remote_wakeup_en)
 {
     (void) remote_wakeup_en;
+    g_suspend_calls++;
 }
 
 // Invoked when usb bus is resumed
 void tud_resume_cb(void)
 {
+    g_resume_calls++;
 }
 
 //--------------------------------------------------------------------+
