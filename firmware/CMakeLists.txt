@@ -20,9 +20,6 @@ check_and_add_pico_pio_usb_support()
 
 add_compile_options(-Wall)
 
-add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-std=c++17>)
-
-
 
 add_executable(little_buddy
     src/main.c
