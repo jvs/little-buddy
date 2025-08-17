@@ -10,10 +10,14 @@
 void cdc_task(void);
 
 int main() {
+    // Give everything time to power up properly.
+    sleep_ms(2000);
+
     // Initialize board
     board_init();
 
     // Initialize I2C for STEMMA QT connector (GPIO 2=SDA, 3=SCL)
+    sleep_ms(500);
     i2c_init(i2c1, 400000);
     gpio_set_function(2, GPIO_FUNC_I2C);
     gpio_set_function(3, GPIO_FUNC_I2C);
