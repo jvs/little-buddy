@@ -150,13 +150,39 @@ int main() {
         }
         boot_button_last = boot_button_now;
 
-        // Update display when we receive data
-        if (byte_count != old_count && display_ok) {
-            sh1107_clear(&display);
-            sh1107_draw_string(&display, 2, 10, "USB DUAL MODE");
-            snprintf(status_buf, sizeof(status_buf), "DEV BYTES: %lu", byte_count);
-            sh1107_draw_string(&display, 2, 25, status_buf);
-            sh1107_display(&display);
+        // Update display periodically
+        static uint32_t last_display_update = 0;
+        if (time_us_32() - last_display_update > 500000) { // Update every 500ms
+            last_display_update = time_us_32();
+            
+            if (display_ok) {
+                sh1107_clear(&display);
+                
+                // Count connected devices
+                int device_count = 0;
+                int kbd_count = 0;
+                int mouse_count = 0;
+                for (int i = 0; i < MAX_HID_DEVICES; i++) {
+                    if (hid_devices[i].is_connected) {
+                        device_count++;
+                        if (hid_devices[i].has_keyboard) kbd_count++;
+                        if (hid_devices[i].has_mouse) mouse_count++;
+                    }
+                }
+                
+                // Line 1: Device counts
+                snprintf(status_buf, sizeof(status_buf), "HID: %d (K:%d M:%d)", device_count, kbd_count, mouse_count);
+                sh1107_draw_string(&display, 2, 10, status_buf);
+                
+                // Line 2: Last event
+                sh1107_draw_string(&display, 2, 25, last_event);
+                
+                // Line 3: CDC bytes for testing
+                snprintf(status_buf, sizeof(status_buf), "CDC: %lu bytes", byte_count);
+                sh1107_draw_string(&display, 2, 40, status_buf);
+                
+                sh1107_display(&display);
+            }
         }
     }
 
@@ -408,23 +434,16 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
         }
     }
 
-    // Parse the HID descriptor to understand the device
-    tud_cdc_write_str("HOST: About to parse descriptor...\r\n");
-    tud_cdc_write_flush();
-    
-    // Parse descriptor directly using the device_slot we just found
+    // Parse descriptor quietly - no CDC spam
     if (device_slot >= 0) {
-        tud_cdc_write_str("HOST: Parsing HID descriptor...\r\n");
-        
         uint16_t pos = 0;
         uint8_t current_usage_page = 0;
         
         while (pos < desc_len) {
             uint8_t item = desc_report[pos];
             uint8_t size = item & 0x03;
-            pos++; // Move past the item byte
+            pos++; 
             
-            // Extract data based on size
             uint32_t data = 0;
             for (int i = 0; i < size; i++) {
                 if (pos + i < desc_len) {
@@ -433,74 +452,32 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
             }
             pos += size;
             
-            // Parse based on tag
-            switch (item & 0xFC) { // Mask out size bits
+            switch (item & 0xFC) {
                 case 0x05: // Usage Page
                     current_usage_page = data;
                     break;
                     
                 case 0x09: // Usage
-                    // Check for keyboard or mouse usage
                     if (current_usage_page == 0x01) { // Generic Desktop
                         if (data == 0x06) { // Keyboard
                             hid_devices[device_slot].has_keyboard = true;
-                            tud_cdc_write_str("HOST: Found KEYBOARD usage\r\n");
                         } else if (data == 0x02 || data == 0x01) { // Mouse or Pointer
                             hid_devices[device_slot].has_mouse = true;
-                            tud_cdc_write_str("HOST: Found MOUSE usage\r\n");
                         }
                     } else if (current_usage_page == 0x07) { // Keyboard page
                         hid_devices[device_slot].has_keyboard = true;
-                        tud_cdc_write_str("HOST: Found KEYBOARD usage page\r\n");
                     }
                     break;
             }
         }
-        
-        char parse_msg[64];
-        snprintf(parse_msg, sizeof(parse_msg), "HOST: Parsed - kbd=%d mouse=%d\r\n",
-                hid_devices[device_slot].has_keyboard, hid_devices[device_slot].has_mouse);
-        tud_cdc_write_str(parse_msg);
-        tud_cdc_write_flush();
     }
-
-    uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
-    char msg[128];
-    const char* protocol_str = "UNKNOWN";
-
-    switch (itf_protocol) {
-        case HID_ITF_PROTOCOL_KEYBOARD:
-            protocol_str = "KEYBOARD";
-            break;
-        case HID_ITF_PROTOCOL_MOUSE:
-            protocol_str = "MOUSE";
-            break;
-        default:
-            protocol_str = "OTHER";
-            break;
-    }
-
-    // Add parsed device capabilities to the message
-    bool has_kbd = false, has_mouse = false;
-    if (device_slot >= 0) {
-        has_kbd = hid_devices[device_slot].has_keyboard;
-        has_mouse = hid_devices[device_slot].has_mouse;
-    }
-
-    snprintf(msg, sizeof(msg), "HOST: %s mounted [%d,%d] len=%d proto=%d kbd=%d mouse=%d\r\n",
-             protocol_str, dev_addr, instance, desc_len, itf_protocol, has_kbd, has_mouse);
-    tud_cdc_write_str(msg);
-    tud_cdc_write_flush();
 
     // Request to receive report
-    if (!tuh_hid_receive_report(dev_addr, instance)) {
-        tud_cdc_write_str("HOST: Error requesting HID report\r\n");
-        tud_cdc_write_flush();
-    }
+    tuh_hid_receive_report(dev_addr, instance);
 }
 
 void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
-    // Clear device info
+    // Clear device info quietly
     for (int i = 0; i < MAX_HID_DEVICES; i++) {
         if (hid_devices[i].is_connected &&
             hid_devices[i].dev_addr == dev_addr &&
@@ -509,60 +486,41 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
             break;
         }
     }
-
-    char msg[64];
-    snprintf(msg, sizeof(msg), "HOST: HID unmounted, addr=%d inst=%d\r\n", dev_addr, instance);
-    tud_cdc_write_str(msg);
-    tud_cdc_write_flush();
 }
 
-void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len) {
-    char msg[128];
-    int offset = snprintf(msg, sizeof(msg), "HOST: HID data [%d,%d]: ", dev_addr, instance);
+// Global variables for display updates
+static char last_event[32] = "None";
+static uint8_t last_key = 0;
 
+void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len) {
     // Find the device info
-    uint8_t itf_protocol = HID_ITF_PROTOCOL_NONE;
     for (int i = 0; i < MAX_HID_DEVICES; i++) {
         if (hid_devices[i].is_connected &&
             hid_devices[i].dev_addr == dev_addr &&
             hid_devices[i].instance == instance) {
-            itf_protocol = hid_devices[i].itf_protocol;
-            break;
-        }
-    }
-
-    // Parse based on interface protocol
-    switch (itf_protocol) {
-        case HID_ITF_PROTOCOL_KEYBOARD:
-            parse_keyboard_report(dev_addr, instance, report, len);
-            break;
-        case HID_ITF_PROTOCOL_MOUSE:
-            parse_mouse_report(dev_addr, instance, report, len);
-            break;
-        default:
-            // Use descriptor analysis to determine parsing
-            for (int i = 0; i < MAX_HID_DEVICES; i++) {
-                if (hid_devices[i].is_connected &&
-                    hid_devices[i].dev_addr == dev_addr &&
-                    hid_devices[i].instance == instance) {
-
-                    if (hid_devices[i].has_keyboard && len == 8) {
-                        parse_keyboard_report(dev_addr, instance, report, len);
-                    } else if (hid_devices[i].has_mouse && len >= 3 && len <= 5) {
-                        parse_mouse_report(dev_addr, instance, report, len);
-                    } else {
-                        // Unknown format - show raw data
-                        for(uint16_t j = 0; j < len && offset < sizeof(msg) - 4; j++) {
-                            offset += snprintf(msg + offset, sizeof(msg) - offset, "%02X ", report[j]);
-                        }
-                        offset += snprintf(msg + offset, sizeof(msg) - offset, "\r\n");
-                        tud_cdc_write_str(msg);
-                        tud_cdc_write_flush();
-                    }
-                    break;
+            
+            // Parse based on what we found in the descriptor
+            if (hid_devices[i].has_keyboard && len == 8) {
+                // Keyboard report: [modifier, reserved, key1, key2, key3, key4, key5, key6]
+                uint8_t modifier = report[0];
+                uint8_t key = report[2]; // First key
+                
+                if (key != 0 && key != last_key) {
+                    last_key = key;
+                    snprintf(last_event, sizeof(last_event), "Key: 0x%02X", key);
+                }
+            } else if (hid_devices[i].has_mouse && len >= 3 && len <= 5) {
+                // Mouse report: [buttons, x, y, wheel]
+                uint8_t buttons = report[0];
+                int8_t delta_x = (int8_t)report[1];
+                int8_t delta_y = (int8_t)report[2];
+                
+                if (buttons != 0 || delta_x != 0 || delta_y != 0) {
+                    snprintf(last_event, sizeof(last_event), "Mouse: btn=%d x=%d y=%d", buttons, delta_x, delta_y);
                 }
             }
             break;
+        }
     }
 
     // Continue to request next report
