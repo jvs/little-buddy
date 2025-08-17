@@ -3,10 +3,6 @@
 
 #define CFG_TUSB_RHPORT0_MODE (OPT_MODE_DEVICE | OPT_MODE_FULL_SPEED)
 
-// Enable device and host stacks explicitly
-#define CFG_TUD_ENABLED     1
-#define CFG_TUH_ENABLED     1
-
 #define CFG_TUSB_MEM_SECTION
 #define CFG_TUSB_MEM_ALIGN __attribute__((aligned(4)))
 
@@ -15,6 +11,7 @@
 #define CFG_TUD_HID 2
 #define CFG_TUD_CDC 0
 #define CFG_TUD_MSC 0
+#define CFG_TUD_MIDI 0
 #define CFG_TUD_VENDOR 0
 
 #define CFG_TUD_HID_EP_BUFSIZE 64
