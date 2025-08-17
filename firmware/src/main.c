@@ -10,6 +10,8 @@
 
 uint32_t cdc_task(void);
 void hid_task(void);
+void send_keyboard_report(uint8_t modifier, uint8_t keycode);
+void send_mouse_report(int8_t delta_x, int8_t delta_y, uint8_t buttons);
 
 int main() {
     // Give everything time to power up properly.
@@ -96,10 +98,56 @@ uint32_t cdc_task(void) {
         uint8_t buf[64];
         uint32_t count = tud_cdc_read(buf, sizeof(buf));
 
-        // Send back a clear response
-        char response[64];
-        snprintf(response, sizeof(response), "GOT %lu BYTES\r\n", count);
-        tud_cdc_write_str(response);
+        // Process commands
+        for (uint32_t i = 0; i < count; i++) {
+            char c = buf[i];
+            switch (c) {
+                case 'l':
+                    // Move mouse left
+                    for (int j = 0; j < 10; j++) {
+                        send_mouse_report(-5, 0, 0);
+                        sleep_ms(20);
+                    }
+                    tud_cdc_write_str("MOUSE LEFT\r\n");
+                    break;
+                case 'r':
+                    // Move mouse right
+                    for (int j = 0; j < 10; j++) {
+                        send_mouse_report(5, 0, 0);
+                        sleep_ms(20);
+                    }
+                    tud_cdc_write_str("MOUSE RIGHT\r\n");
+                    break;
+                case 'u':
+                    // Move mouse up
+                    for (int j = 0; j < 10; j++) {
+                        send_mouse_report(0, -5, 0);
+                        sleep_ms(20);
+                    }
+                    tud_cdc_write_str("MOUSE UP\r\n");
+                    break;
+                case 'd':
+                    // Move mouse down
+                    for (int j = 0; j < 10; j++) {
+                        send_mouse_report(0, 5, 0);
+                        sleep_ms(20);
+                    }
+                    tud_cdc_write_str("MOUSE DOWN\r\n");
+                    break;
+                case 'a':
+                    // Wait then send 'b' key
+                    sleep_ms(500);
+                    send_keyboard_report(0, HID_KEY_B);  // Press 'b'
+                    sleep_ms(50);
+                    send_keyboard_report(0, 0);          // Release 'b'
+                    tud_cdc_write_str("SENT KEY 'B'\r\n");
+                    break;
+                default:
+                    // Send back normal response
+                    tud_cdc_write_str("GOT 1 BYTES\r\n");
+                    break;
+            }
+        }
         tud_cdc_write_flush();
 
         bytes_received = count;
@@ -133,17 +181,23 @@ uint8_t const * tud_descriptor_device_cb(void) {
 enum {
     ITF_NUM_CDC = 0,
     ITF_NUM_CDC_DATA,
+    ITF_NUM_HID_KEYBOARD,
+    ITF_NUM_HID_MOUSE,
     ITF_NUM_TOTAL
 };
 
-#define CONFIG_TOTAL_LEN  (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN)
+#define CONFIG_TOTAL_LEN  (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN + TUD_HID_DESC_LEN + TUD_HID_DESC_LEN)
 #define EPNUM_CDC_NOTIF   0x81
 #define EPNUM_CDC_OUT     0x02
 #define EPNUM_CDC_IN      0x82
+#define EPNUM_HID_KEYBOARD 0x83
+#define EPNUM_HID_MOUSE   0x84
 
 uint8_t const desc_configuration[] = {
     TUD_CONFIG_DESCRIPTOR(1, ITF_NUM_TOTAL, 0, CONFIG_TOTAL_LEN, 0x00, 100),
     TUD_CDC_DESCRIPTOR(ITF_NUM_CDC, 4, EPNUM_CDC_NOTIF, 8, EPNUM_CDC_OUT, EPNUM_CDC_IN, 64),
+    TUD_HID_DESCRIPTOR(ITF_NUM_HID_KEYBOARD, 5, HID_ITF_PROTOCOL_KEYBOARD, sizeof(desc_hid_report_keyboard), EPNUM_HID_KEYBOARD, CFG_TUD_HID_EP_BUFSIZE, 5),
+    TUD_HID_DESCRIPTOR(ITF_NUM_HID_MOUSE, 6, HID_ITF_PROTOCOL_MOUSE, sizeof(desc_hid_report_mouse), EPNUM_HID_MOUSE, CFG_TUD_HID_EP_BUFSIZE, 5),
 };
 
 uint8_t const * tud_descriptor_configuration_cb(uint8_t index) {
@@ -151,13 +205,34 @@ uint8_t const * tud_descriptor_configuration_cb(uint8_t index) {
     return desc_configuration;
 }
 
+// HID Report Descriptor for Keyboard
+uint8_t const desc_hid_report_keyboard[] = {
+    TUD_HID_REPORT_DESC_KEYBOARD()
+};
+
+// HID Report Descriptor for Mouse
+uint8_t const desc_hid_report_mouse[] = {
+    TUD_HID_REPORT_DESC_MOUSE()
+};
+
+// Invoked when received GET HID REPORT DESCRIPTOR request
+uint8_t const * tud_hid_descriptor_report_cb(uint8_t instance) {
+    if (instance == 0) {
+        return desc_hid_report_keyboard;
+    } else {
+        return desc_hid_report_mouse;
+    }
+}
+
 // String Descriptors
 char const* string_desc_arr [] = {
     (const char[]) { 0x09, 0x04 }, // 0: language
     "Little Buddy",                // 1: Manufacturer
-    "USB Device",                  // 2: Product
+    "USB Bridge Device",           // 2: Product
     "123456",                      // 3: Serials
     "CDC Interface",               // 4: CDC Interface
+    "HID Keyboard",                // 5: HID Keyboard Interface
+    "HID Mouse",                   // 6: HID Mouse Interface
 };
 
 static uint16_t _desc_str[32];
@@ -186,6 +261,33 @@ uint16_t const* tud_descriptor_string_cb(uint8_t index, uint16_t langid) {
     _desc_str[0] = (TUSB_DESC_STRING << 8 ) | (2*chr_count + 2);
 
     return _desc_str;
+}
+
+//--------------------------------------------------------------------+
+// HID DEVICE CALLBACKS
+//--------------------------------------------------------------------+
+
+// Invoked when received GET_REPORT control request
+// Application must fill buffer report's content and return its length.
+// Return zero will cause the stack to STALL request
+uint16_t tud_hid_get_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_t report_type, uint8_t* buffer, uint16_t reqlen) {
+    (void) instance;
+    (void) report_id;
+    (void) report_type;
+    (void) buffer;
+    (void) reqlen;
+
+    return 0;
+}
+
+// Invoked when received SET_REPORT control request or
+// received data on OUT endpoint ( Report ID = 0, Type = 0 )
+void tud_hid_set_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_t report_type, uint8_t const* buffer, uint16_t bufsize) {
+    (void) instance;
+    (void) report_id;
+    (void) report_type;
+    (void) buffer;
+    (void) bufsize;
 }
 
 //--------------------------------------------------------------------+
@@ -245,4 +347,27 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
 void hid_task(void) {
     // This function is called from main loop
     // HID host processing is handled in the callbacks above
+}
+
+//--------------------------------------------------------------------+
+// HID DEVICE HELPER FUNCTIONS
+//--------------------------------------------------------------------+
+
+void send_keyboard_report(uint8_t modifier, uint8_t keycode) {
+    // Check if device is ready
+    if (!tud_hid_ready()) return;
+
+    // Keyboard report format: [modifier, reserved, key1, key2, key3, key4, key5, key6]
+    uint8_t keyreport[8] = {0};
+    keyreport[0] = modifier;
+    keyreport[2] = keycode;
+    
+    tud_hid_keyboard_report(HID_ITF_PROTOCOL_KEYBOARD, modifier, keyreport + 2);
+}
+
+void send_mouse_report(int8_t delta_x, int8_t delta_y, uint8_t buttons) {
+    // Check if device is ready
+    if (!tud_hid_ready()) return;
+
+    tud_hid_mouse_report(HID_ITF_PROTOCOL_MOUSE, buttons, delta_x, delta_y, 0, 0);
 }
