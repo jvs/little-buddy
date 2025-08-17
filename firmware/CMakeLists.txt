@@ -50,4 +50,3 @@ pico_enable_stdio_uart(little_buddy 0)
 
 pico_set_binary_type(little_buddy copy_to_ram)
 pico_add_extra_outputs(little_buddy)
-
