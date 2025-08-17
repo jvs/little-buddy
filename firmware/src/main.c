@@ -8,10 +8,24 @@
 
 #include "sh1107_display.h"
 
+// HID device tracking
+typedef struct {
+    uint8_t dev_addr;
+    uint8_t instance;
+    uint8_t itf_protocol;  // HID_ITF_PROTOCOL_KEYBOARD, HID_ITF_PROTOCOL_MOUSE, etc.
+    bool is_connected;
+    uint16_t report_desc_len;
+} hid_device_info_t;
+
+#define MAX_HID_DEVICES 4
+static hid_device_info_t hid_devices[MAX_HID_DEVICES];
+
 uint32_t cdc_task(void);
 void hid_task(void);
 void send_keyboard_report(uint8_t modifier, uint8_t keycode);
 void send_mouse_report(int8_t delta_x, int8_t delta_y, uint8_t buttons);
+void parse_keyboard_report(uint8_t dev_addr, uint8_t instance, const uint8_t* report, uint16_t len);
+void parse_mouse_report(uint8_t dev_addr, uint8_t instance, const uint8_t* report, uint16_t len);
 
 // Non-blocking keyboard test state
 uint32_t keyboard_test_deadline = 0;
@@ -354,11 +368,39 @@ void tuh_umount_cb(uint8_t dev_addr) {
 }
 
 void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_report, uint16_t desc_len) {
-    char msg[64];
-    snprintf(msg, sizeof(msg), "HOST: HID mounted, addr=%d inst=%d\r\n", dev_addr, instance);
+    // Find empty slot to store device info
+    for (int i = 0; i < MAX_HID_DEVICES; i++) {
+        if (!hid_devices[i].is_connected) {
+            hid_devices[i].dev_addr = dev_addr;
+            hid_devices[i].instance = instance;
+            hid_devices[i].itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
+            hid_devices[i].is_connected = true;
+            hid_devices[i].report_desc_len = desc_len;
+            break;
+        }
+    }
+    
+    uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
+    char msg[128];
+    const char* protocol_str = "UNKNOWN";
+    
+    switch (itf_protocol) {
+        case HID_ITF_PROTOCOL_KEYBOARD:
+            protocol_str = "KEYBOARD";
+            break;
+        case HID_ITF_PROTOCOL_MOUSE:
+            protocol_str = "MOUSE";
+            break;
+        default:
+            protocol_str = "OTHER";
+            break;
+    }
+    
+    snprintf(msg, sizeof(msg), "HOST: %s mounted [%d,%d] desc_len=%d\r\n", 
+             protocol_str, dev_addr, instance, desc_len);
     tud_cdc_write_str(msg);
     tud_cdc_write_flush();
-
+    
     // Request to receive report
     if (!tuh_hid_receive_report(dev_addr, instance)) {
         tud_cdc_write_str("HOST: Error requesting HID report\r\n");
@@ -367,6 +409,16 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
 }
 
 void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
+    // Clear device info
+    for (int i = 0; i < MAX_HID_DEVICES; i++) {
+        if (hid_devices[i].is_connected && 
+            hid_devices[i].dev_addr == dev_addr && 
+            hid_devices[i].instance == instance) {
+            hid_devices[i].is_connected = false;
+            break;
+        }
+    }
+    
     char msg[64];
     snprintf(msg, sizeof(msg), "HOST: HID unmounted, addr=%d inst=%d\r\n", dev_addr, instance);
     tud_cdc_write_str(msg);
@@ -377,13 +429,35 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
     char msg[128];
     int offset = snprintf(msg, sizeof(msg), "HOST: HID data [%d,%d]: ", dev_addr, instance);
 
-    for(uint16_t i = 0; i < len && offset < sizeof(msg) - 4; i++) {
-        offset += snprintf(msg + offset, sizeof(msg) - offset, "%02X ", report[i]);
+    // Find the device info
+    uint8_t itf_protocol = HID_ITF_PROTOCOL_NONE;
+    for (int i = 0; i < MAX_HID_DEVICES; i++) {
+        if (hid_devices[i].is_connected && 
+            hid_devices[i].dev_addr == dev_addr && 
+            hid_devices[i].instance == instance) {
+            itf_protocol = hid_devices[i].itf_protocol;
+            break;
+        }
     }
-    offset += snprintf(msg + offset, sizeof(msg) - offset, "\r\n");
-
-    tud_cdc_write_str(msg);
-    tud_cdc_write_flush();
+    
+    // Parse based on interface protocol
+    switch (itf_protocol) {
+        case HID_ITF_PROTOCOL_KEYBOARD:
+            parse_keyboard_report(dev_addr, instance, report, len);
+            break;
+        case HID_ITF_PROTOCOL_MOUSE:
+            parse_mouse_report(dev_addr, instance, report, len);
+            break;
+        default:
+            // Unknown protocol - just show raw data
+            for(uint16_t i = 0; i < len && offset < sizeof(msg) - 4; i++) {
+                offset += snprintf(msg + offset, sizeof(msg) - offset, "%02X ", report[i]);
+            }
+            offset += snprintf(msg + offset, sizeof(msg) - offset, "\r\n");
+            tud_cdc_write_str(msg);
+            tud_cdc_write_flush();
+            break;
+    }
 
     // Continue to request next report
     tuh_hid_receive_report(dev_addr, instance);
@@ -414,4 +488,65 @@ void send_mouse_report(int8_t delta_x, int8_t delta_y, uint8_t buttons) {
     if (!tud_hid_n_ready(1)) return;
 
     tud_hid_n_mouse_report(1, 0, buttons, delta_x, delta_y, 0, 0);
+}
+
+//--------------------------------------------------------------------+
+// HID HOST PARSING FUNCTIONS
+//--------------------------------------------------------------------+
+
+void parse_keyboard_report(uint8_t dev_addr, uint8_t instance, const uint8_t* report, uint16_t len) {
+    // Standard keyboard report format: [modifier, reserved, key1, key2, key3, key4, key5, key6]
+    if (len < 8) {
+        tud_cdc_write_str("HOST: KEYBOARD report too short\r\n");
+        return;
+    }
+    
+    uint8_t modifier = report[0];
+    // report[1] is reserved
+    uint8_t keys[6];
+    for (int i = 0; i < 6; i++) {
+        keys[i] = report[i + 2];
+    }
+    
+    char msg[128];
+    int offset = snprintf(msg, sizeof(msg), "HOST: KEYBOARD [%d,%d] mod=0x%02X keys=", 
+                         dev_addr, instance, modifier);
+    
+    bool has_keys = false;
+    for (int i = 0; i < 6; i++) {
+        if (keys[i] != 0) {
+            offset += snprintf(msg + offset, sizeof(msg) - offset, "%02X ", keys[i]);
+            has_keys = true;
+        }
+    }
+    
+    if (!has_keys) {
+        offset += snprintf(msg + offset, sizeof(msg) - offset, "NONE");
+    }
+    
+    offset += snprintf(msg + offset, sizeof(msg) - offset, "\r\n");
+    tud_cdc_write_str(msg);
+    tud_cdc_write_flush();
+}
+
+void parse_mouse_report(uint8_t dev_addr, uint8_t instance, const uint8_t* report, uint16_t len) {
+    // Standard mouse report format: [buttons, x, y, wheel, ...]
+    if (len < 3) {
+        tud_cdc_write_str("HOST: MOUSE report too short\r\n");
+        return;
+    }
+    
+    uint8_t buttons = report[0];
+    int8_t delta_x = (int8_t)report[1];
+    int8_t delta_y = (int8_t)report[2];
+    int8_t wheel = (len > 3) ? (int8_t)report[3] : 0;
+    
+    // Only print if there's actual activity (not all zeros)
+    if (buttons != 0 || delta_x != 0 || delta_y != 0 || wheel != 0) {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "HOST: MOUSE [%d,%d] btn=0x%02X x=%d y=%d wheel=%d\r\n",
+                dev_addr, instance, buttons, delta_x, delta_y, wheel);
+        tud_cdc_write_str(msg);
+        tud_cdc_write_flush();
+    }
 }
