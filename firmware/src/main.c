@@ -437,41 +437,21 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
         }
     }
 
-    // Parse descriptor quietly - no CDC spam
+    // Simple heuristic approach: assume devices can do both keyboard and mouse
     if (device_slot >= 0) {
-        uint16_t pos = 0;
-        uint8_t current_usage_page = 0;
+        uint8_t itf_protocol = hid_devices[device_slot].itf_protocol;
         
-        while (pos < desc_len) {
-            uint8_t item = desc_report[pos];
-            uint8_t size = item & 0x03;
-            pos++; 
-            
-            uint32_t data = 0;
-            for (int i = 0; i < size; i++) {
-                if (pos + i < desc_len) {
-                    data |= (desc_report[pos + i] << (i * 8));
-                }
-            }
-            pos += size;
-            
-            switch (item & 0xFC) {
-                case 0x05: // Usage Page
-                    current_usage_page = data;
-                    break;
-                    
-                case 0x09: // Usage
-                    if (current_usage_page == 0x01) { // Generic Desktop
-                        if (data == 0x06) { // Keyboard
-                            hid_devices[device_slot].has_keyboard = true;
-                        } else if (data == 0x02 || data == 0x01) { // Mouse or Pointer
-                            hid_devices[device_slot].has_mouse = true;
-                        }
-                    } else if (current_usage_page == 0x07) { // Keyboard page
-                        hid_devices[device_slot].has_keyboard = true;
-                    }
-                    break;
-            }
+        if (itf_protocol == HID_ITF_PROTOCOL_KEYBOARD) {
+            // Standard keyboard
+            hid_devices[device_slot].has_keyboard = true;
+        } else if (itf_protocol == HID_ITF_PROTOCOL_MOUSE) {
+            // Standard mouse  
+            hid_devices[device_slot].has_mouse = true;
+        } else {
+            // Unknown protocol - assume it's a composite device like trackpoint
+            // Most trackpoint keyboards can do both
+            hid_devices[device_slot].has_keyboard = true;
+            hid_devices[device_slot].has_mouse = true;
         }
     }
 
