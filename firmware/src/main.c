@@ -7,6 +7,7 @@
 #include <pio_usb.h>
 
 #include "sh1107_display.h"
+#include "neopixel.h"
 
 // HID device tracking
 typedef struct {
@@ -76,7 +77,13 @@ int main() {
     gpio_pull_up(2);
     gpio_pull_up(3);
 
-    // Initialize display
+    // Initialize NeoPixel
+    bool neopixel_ok = neopixel_init();
+    if (neopixel_ok) {
+        neopixel_set_status(NEOPIXEL_STATUS_STARTING);
+    }
+
+    // Initialize display (optional - may not be present)
     sh1107_t display;
     bool display_ok = sh1107_init(&display, i2c1);
 
@@ -107,7 +114,11 @@ int main() {
     // Wait a bit for USB to initialize
     sleep_ms(100);
 
-    // Show USB ready message
+    // Show USB ready message and update NeoPixel
+    if (neopixel_ok) {
+        neopixel_set_status(NEOPIXEL_STATUS_USB_READY);
+    }
+    
     if (display_ok) {
         sh1107_clear(&display);
         sh1107_draw_string(&display, 1, 10, "USB DUAL MODE");
@@ -131,6 +142,11 @@ int main() {
 
         // HID host task for handling connected devices
         hid_task();
+        
+        // Update NeoPixel blinking patterns
+        if (neopixel_ok) {
+            neopixel_update_blink();
+        }
 
         // Check for pending keyboard test
         if (keyboard_test_pending && time_us_32() >= keyboard_test_deadline) {
@@ -270,12 +286,30 @@ uint32_t cdc_task(void) {
                         }
                     }
                     break;
+                case 'n':
+                    // Test NeoPixel colors
+                    neopixel_set_color(255, 0, 0); // Red
+                    sleep_ms(500);
+                    neopixel_set_color(0, 255, 0); // Green
+                    sleep_ms(500);
+                    neopixel_set_color(0, 0, 255); // Blue
+                    sleep_ms(500);
+                    neopixel_set_status(NEOPIXEL_STATUS_USB_READY); // Back to status
+                    tud_cdc_write_str("NEOPIXEL TEST COMPLETE\r\n");
+                    break;
+                case 'o':
+                    // Turn off NeoPixel
+                    neopixel_off();
+                    tud_cdc_write_str("NEOPIXEL OFF\r\n");
+                    break;
                 case 'H':
                     // Help
                     tud_cdc_write_str("COMMANDS:\r\n");
                     tud_cdc_write_str("  l/r/u/d - test mouse movement\r\n");
                     tud_cdc_write_str("  a - test keyboard (sends 'b')\r\n");
                     tud_cdc_write_str("  c - clear stuck keys\r\n");
+                    tud_cdc_write_str("  n - test NeoPixel colors\r\n");
+                    tud_cdc_write_str("  o - turn off NeoPixel\r\n");
                     tud_cdc_write_str("  D - toggle raw HID report debugging\r\n");
                     tud_cdc_write_str("  S - show connected devices\r\n");
                     tud_cdc_write_str("  H - show this help\r\n");
@@ -490,6 +524,9 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
 
     // Request to receive report
     tuh_hid_receive_report(dev_addr, instance);
+    
+    // Update NeoPixel to show device detected
+    neopixel_set_status(NEOPIXEL_STATUS_DEVICE_DETECTED);
 }
 
 void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {

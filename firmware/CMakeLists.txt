@@ -22,6 +22,10 @@ add_compile_options(-Wall)
 
 
 file(GLOB SOURCES "src/*.c")
+
+# Generate PIO headers
+pico_generate_pio_header(little_buddy ${CMAKE_CURRENT_LIST_DIR}/src/ws2812.pio)
+
 add_executable(little_buddy ${SOURCES})
 
 
