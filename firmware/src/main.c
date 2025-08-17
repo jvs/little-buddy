@@ -41,6 +41,8 @@ int main() {
         // CDC task for handling serial communication
         cdc_task();
     }
+
+    return 0;
 }
 
 void cdc_task(void) {
