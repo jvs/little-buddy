@@ -32,6 +32,6 @@
 #define CFG_TUH_HID_EPIN_BUFSIZE 64
 #define CFG_TUH_HID_EPOUT_BUFSIZE 64
 
-// #define CFG_TUH_RPI_PIO_USB 1  // Disabled - using native USB only
+#define CFG_TUH_RPI_PIO_USB 1
 
 #endif

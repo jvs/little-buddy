@@ -16,7 +16,7 @@ project(little_buddy)
 
 pico_sdk_init()
 
-# check_and_add_pico_pio_usb_support()
+check_and_add_pico_pio_usb_support()
 
 add_compile_options(-Wall)
 
