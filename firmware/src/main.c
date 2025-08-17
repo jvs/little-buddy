@@ -259,6 +259,17 @@ uint32_t cdc_task(void) {
                         tud_cdc_write_str("DEBUG: Raw report dumping OFF\r\n");
                     }
                     break;
+                case 'S':
+                    // Show descriptor
+                    for (int i = 0; i < MAX_HID_DEVICES; i++) {
+                        if (hid_devices[i].is_connected) {
+                            char msg[64];
+                            snprintf(msg, sizeof(msg), "DEVICE %d: addr=%d inst=%d len=%d\r\n", 
+                                    i, hid_devices[i].dev_addr, hid_devices[i].instance, hid_devices[i].report_desc_len);
+                            tud_cdc_write_str(msg);
+                        }
+                    }
+                    break;
                 case 'H':
                     // Help
                     tud_cdc_write_str("COMMANDS:\r\n");
@@ -266,6 +277,7 @@ uint32_t cdc_task(void) {
                     tud_cdc_write_str("  a - test keyboard (sends 'b')\r\n");
                     tud_cdc_write_str("  c - clear stuck keys\r\n");
                     tud_cdc_write_str("  D - toggle raw HID report debugging\r\n");
+                    tud_cdc_write_str("  S - show connected devices\r\n");
                     tud_cdc_write_str("  H - show this help\r\n");
                     break;
                 default:
@@ -513,23 +525,28 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
             hid_devices[i].dev_addr == dev_addr &&
             hid_devices[i].instance == instance) {
             
-            // Parse based on what we found in the descriptor
-            if (hid_devices[i].has_keyboard && len == 8) {
-                // Keyboard report: [modifier, reserved, key1, key2, key3, key4, key5, key6]
-                uint8_t key = report[2]; // First key
-                
-                if (key != 0 && key != last_key) {
-                    last_key = key;
-                    snprintf(last_event, sizeof(last_event), "Key: 0x%02X", key);
-                }
-            } else if (hid_devices[i].has_mouse && len >= 3 && len <= 5) {
-                // Mouse report: [buttons, x, y, wheel]
-                uint8_t buttons = report[0];
-                int8_t delta_x = (int8_t)report[1];
-                int8_t delta_y = (int8_t)report[2];
-                
-                if (buttons != 0 || delta_x != 0 || delta_y != 0) {
-                    snprintf(last_event, sizeof(last_event), "Mouse: btn=%d x=%d y=%d", buttons, delta_x, delta_y);
+            // Handle trackpoint keyboard reports (based on Linux hid-lenovo.c)
+            if (len == 8) {
+                // Check for trackpoint data embedded in keyboard report
+                // Linux kernel checks: report[0] == 0x01 indicates trackpoint data
+                if (report[0] == 0x01) {
+                    // Trackpoint report format (from Linux kernel):
+                    // [0x01, buttons, x_low, y_low, x_high, y_high, ?, ?]
+                    uint8_t buttons = report[1];
+                    int16_t delta_x = (int8_t)report[2] | ((report[4] & 0x0F) << 8);
+                    int16_t delta_y = (int8_t)report[3] | ((report[5] & 0x0F) << 8);
+                    
+                    if (buttons != 0 || delta_x != 0 || delta_y != 0) {
+                        snprintf(last_event, sizeof(last_event), "Track: btn=%d x=%d y=%d", buttons, delta_x, delta_y);
+                    }
+                } else {
+                    // Normal keyboard report: [modifier, reserved, key1, key2, key3, key4, key5, key6]
+                    uint8_t key = report[2]; // First key
+                    
+                    if (key != 0 && key != last_key) {
+                        last_key = key;
+                        snprintf(last_event, sizeof(last_event), "Key: 0x%02X", key);
+                    }
                 }
             }
             break;
