@@ -13,6 +13,10 @@ void hid_task(void);
 void send_keyboard_report(uint8_t modifier, uint8_t keycode);
 void send_mouse_report(int8_t delta_x, int8_t delta_y, uint8_t buttons);
 
+// Non-blocking keyboard test state
+uint32_t keyboard_test_deadline = 0;
+bool keyboard_test_pending = false;
+
 int main() {
     // Give everything time to power up properly.
     sleep_ms(2000);
@@ -70,9 +74,6 @@ int main() {
     static uint32_t byte_count = 0;
     char status_buf[32];
     
-    // Non-blocking keyboard test state
-    static uint32_t keyboard_test_deadline = 0;
-    static bool keyboard_test_pending = false;
 
     while (1) {
         // TinyUSB device task
