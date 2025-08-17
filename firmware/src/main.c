@@ -66,7 +66,7 @@ int main() {
     // Show startup message
     if (display_ok) {
         sh1107_clear(&display);
-        sh1107_draw_string(&display, 10, 10, "LB v1.0");
+        sh1107_draw_string(&display, 10, 10, "NO PIO USB");
         sh1107_draw_string(&display, 10, 25, "USB HOST READY");
         sh1107_display(&display);
     }
