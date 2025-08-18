@@ -1,6 +1,7 @@
 #include "neopixel.h"
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
+#include "hardware/sync.h"
 
 // NeoPixel configuration
 #define NEOPIXEL_PIN 21  // GPIO 21 on Feather RP2040 with USB Type A Host
@@ -17,6 +18,34 @@ static uint8_t neopixel_brightness = 255;
 static uint32_t last_blink_time = 0;
 static bool blink_state = false;
 static neopixel_status_t current_status = NEOPIXEL_STATUS_OFF;
+
+// Software bit-bang implementation for WS2812
+static void send_bit(bool bit) {
+    if (bit) {
+        // Send '1': ~0.8µs high, ~0.45µs low
+        gpio_put(NEOPIXEL_PIN, 1);
+        sleep_us(1);  // Approximately 0.8µs (will be slightly longer)
+        gpio_put(NEOPIXEL_PIN, 0);
+        sleep_us(1);  // Approximately 0.45µs (will be slightly longer)
+    } else {
+        // Send '0': ~0.4µs high, ~0.85µs low  
+        gpio_put(NEOPIXEL_PIN, 1);
+        sleep_us(1);  // Approximately 0.4µs (will be slightly longer)
+        gpio_put(NEOPIXEL_PIN, 0);
+        sleep_us(2);  // Approximately 0.85µs (will be slightly longer)
+    }
+}
+
+static void send_byte(uint8_t byte) {
+    for (int i = 7; i >= 0; i--) {
+        send_bit(byte & (1 << i));
+    }
+}
+
+static void send_reset(void) {
+    gpio_put(NEOPIXEL_PIN, 0);
+    sleep_us(50); // Reset time > 50µs
+}
 
 // Color conversion: RGB to GRB format for WS2812
 static inline uint32_t urgb_u32(uint8_t r, uint8_t g, uint8_t b) {
@@ -46,34 +75,6 @@ static inline void put_pixel(uint32_t pixel_grb) {
     
     // Restore interrupts
     restore_interrupts(saved_interrupts);
-}
-
-// Software bit-bang implementation for WS2812
-static void send_bit(bool bit) {
-    if (bit) {
-        // Send '1': ~0.8µs high, ~0.45µs low
-        gpio_put(NEOPIXEL_PIN, 1);
-        sleep_us(1);  // Approximately 0.8µs (will be slightly longer)
-        gpio_put(NEOPIXEL_PIN, 0);
-        sleep_us(1);  // Approximately 0.45µs (will be slightly longer)
-    } else {
-        // Send '0': ~0.4µs high, ~0.85µs low  
-        gpio_put(NEOPIXEL_PIN, 1);
-        sleep_us(1);  // Approximately 0.4µs (will be slightly longer)
-        gpio_put(NEOPIXEL_PIN, 0);
-        sleep_us(2);  // Approximately 0.85µs (will be slightly longer)
-    }
-}
-
-static void send_byte(uint8_t byte) {
-    for (int i = 7; i >= 0; i--) {
-        send_bit(byte & (1 << i));
-    }
-}
-
-static void send_reset(void) {
-    gpio_put(NEOPIXEL_PIN, 0);
-    sleep_us(50); // Reset time > 50µs
 }
 
 bool neopixel_init(void) {
