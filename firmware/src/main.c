@@ -92,50 +92,21 @@ int main() {
         sleep_ms(500);
     }
 
-    // Update display before NeoPixel init
+    // Try to turn off NeoPixel - simple approach
     if (display_ok) {
         sh1107_clear(&display);
-        sh1107_draw_string(&display, 1, 10, "INIT NEOPIXEL...");
-        sh1107_display(&display);
-    }
-
-    // Initialize NeoPixel
-    neopixel_ok = neopixel_init();
-    
-    // Update display with result
-    if (display_ok) {
-        sh1107_clear(&display);
-        if (neopixel_ok) {
-            sh1107_draw_string(&display, 1, 10, "NP: OK");
-            sh1107_draw_string(&display, 1, 25, "TESTING...");
-        } else {
-            sh1107_draw_string(&display, 1, 10, "NP: FAILED");
-        }
+        sh1107_draw_string(&display, 1, 10, "TURNING OFF NP...");
         sh1107_display(&display);
     }
     
-    if (neopixel_ok) {
-        // Test basic functionality first
-        neopixel_set_color(255, 255, 0); // Yellow for starting
-        sleep_ms(1000);
-    }
-    
-    // Simple GPIO test to verify pin connection
-    if (display_ok) {
-        sh1107_clear(&display);
-        sh1107_draw_string(&display, 1, 10, "GPIO TEST...");
-        sh1107_display(&display);
-    }
-    
-    // Toggle GPIO 21 directly to see if it affects NeoPixel
+    // Just hold GPIO 21 low to try to turn off NeoPixel
     gpio_init(21);
     gpio_set_dir(21, GPIO_OUT);
-    for (int i = 0; i < 10; i++) {
-        gpio_put(21, 1);
-        sleep_ms(100);
-        gpio_put(21, 0);
-        sleep_ms(100);
-    }
+    gpio_put(21, 0);
+    sleep_ms(100);
+    
+    // Mark NeoPixel as "disabled" for now
+    neopixel_ok = false;
 
     // Initialize Boot button (GPIO 23 on RP2040)
     gpio_init(23);
