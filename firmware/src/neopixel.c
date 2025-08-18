@@ -5,7 +5,7 @@
 #include "hardware/clocks.h"
 
 // NeoPixel configuration
-#define NEOPIXEL_PIN PICO_DEFAULT_WS2812_PIN  // GPIO 16 on Feather RP2040
+#define NEOPIXEL_PIN 21  // GPIO 21 on Feather RP2040 with USB Type A Host
 #define NEOPIXEL_FREQ 800000                  // 800 kHz
 #define IS_RGBW false                         // Standard RGB NeoPixels
 
