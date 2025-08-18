@@ -1,18 +1,13 @@
 #include "neopixel.h"
-#include "ws2812.pio.h"
 #include "pico/stdlib.h"
-#include "hardware/pio.h"
-#include "hardware/clocks.h"
+#include "hardware/gpio.h"
 
 // NeoPixel configuration
 #define NEOPIXEL_PIN 21  // GPIO 21 on Feather RP2040 with USB Type A Host
 #define NEOPIXEL_FREQ 800000                  // 800 kHz
 #define IS_RGBW false                         // Standard RGB NeoPixels
 
-// PIO state machine configuration
-static PIO neopixel_pio = pio0;
-static uint neopixel_sm = 0;
-static uint neopixel_offset;
+// Initialization state
 static bool neopixel_initialized = false;
 
 // Brightness control (0-255)
@@ -36,34 +31,56 @@ static inline uint32_t urgb_u32(uint8_t r, uint8_t g, uint8_t b) {
            (uint32_t)(b);
 }
 
-// Send pixel data to WS2812
+// Send pixel data to WS2812 using software bit-bang
 static inline void put_pixel(uint32_t pixel_grb) {
-    pio_sm_put_blocking(neopixel_pio, neopixel_sm, pixel_grb << 8u);
+    // Disable interrupts for precise timing
+    uint32_t saved_interrupts = save_and_disable_interrupts();
+    
+    // Send GRB data (24 bits total)
+    send_byte((pixel_grb >> 16) & 0xFF); // Green
+    send_byte((pixel_grb >> 8) & 0xFF);  // Red  
+    send_byte(pixel_grb & 0xFF);         // Blue
+    
+    // Send reset signal
+    send_reset();
+    
+    // Restore interrupts
+    restore_interrupts(saved_interrupts);
+}
+
+// Software bit-bang implementation for WS2812
+static void send_bit(bool bit) {
+    if (bit) {
+        // Send '1': ~0.8µs high, ~0.45µs low
+        gpio_put(NEOPIXEL_PIN, 1);
+        sleep_us(1);  // Approximately 0.8µs (will be slightly longer)
+        gpio_put(NEOPIXEL_PIN, 0);
+        sleep_us(1);  // Approximately 0.45µs (will be slightly longer)
+    } else {
+        // Send '0': ~0.4µs high, ~0.85µs low  
+        gpio_put(NEOPIXEL_PIN, 1);
+        sleep_us(1);  // Approximately 0.4µs (will be slightly longer)
+        gpio_put(NEOPIXEL_PIN, 0);
+        sleep_us(2);  // Approximately 0.85µs (will be slightly longer)
+    }
+}
+
+static void send_byte(uint8_t byte) {
+    for (int i = 7; i >= 0; i--) {
+        send_bit(byte & (1 << i));
+    }
+}
+
+static void send_reset(void) {
+    gpio_put(NEOPIXEL_PIN, 0);
+    sleep_us(50); // Reset time > 50µs
 }
 
 bool neopixel_init(void) {
-    // Try to find an available state machine
-    neopixel_sm = pio_claim_unused_sm(neopixel_pio, false);
-    if (neopixel_sm == -1) {
-        // Try PIO1 if PIO0 is full
-        neopixel_pio = pio1;
-        neopixel_sm = pio_claim_unused_sm(neopixel_pio, false);
-        if (neopixel_sm == -1) {
-            return false;
-        }
-    }
-    
-    // Check if we can add the program
-    if (!pio_can_add_program(neopixel_pio, &ws2812_program)) {
-        return false;
-    }
-    
-    // Add the program to PIO
-    neopixel_offset = pio_add_program(neopixel_pio, &ws2812_program);
-    
-    // Initialize the state machine
-    ws2812_program_init(neopixel_pio, neopixel_sm, neopixel_offset, 
-                       NEOPIXEL_PIN, NEOPIXEL_FREQ, IS_RGBW);
+    // Simple GPIO setup instead of PIO
+    gpio_init(NEOPIXEL_PIN);
+    gpio_set_dir(NEOPIXEL_PIN, GPIO_OUT);
+    gpio_put(NEOPIXEL_PIN, 0);
     
     neopixel_initialized = true;
     
