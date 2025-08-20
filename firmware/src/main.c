@@ -89,8 +89,13 @@ int main() {
         sleep_ms(500);
     }
 
+    // Configure the NeoPixel data pin to ensure it's not driving the LED.
+    gpio_init(21);  // NeoPixel data pin
+    gpio_set_dir(21, GPIO_OUT);
+    gpio_put(21, 0);  // Set data pin low
+
     // Turn off NeoPixel completely by disabling its power
-    gpio_init(20);  // NeoPixel power pin 
+    gpio_init(20);  // NeoPixel power pin
     gpio_set_dir(20, GPIO_OUT);
     gpio_put(20, 0);  // Turn off power to NeoPixel
 
@@ -114,7 +119,7 @@ int main() {
     sleep_ms(100);
 
     // Show USB ready message
-    
+
     if (display_ok) {
         sh1107_clear(&display);
         sh1107_draw_string(&display, 1, 10, "USB DUAL MODE");
@@ -138,7 +143,7 @@ int main() {
 
         // HID host task for handling connected devices
         hid_task();
-        
+
 
         // Check for pending keyboard test
         if (keyboard_test_pending && time_us_32() >= keyboard_test_deadline) {
@@ -168,10 +173,10 @@ int main() {
         static uint32_t last_display_update = 0;
         if (time_us_32() - last_display_update > 500000) { // Update every 500ms
             last_display_update = time_us_32();
-            
+
             if (display_ok) {
                 sh1107_clear(&display);
-                
+
                 // Count connected devices
                 int device_count = 0;
                 int kbd_count = 0;
@@ -183,18 +188,18 @@ int main() {
                         if (hid_devices[i].has_mouse) mouse_count++;
                     }
                 }
-                
+
                 // Line 1: Device counts
                 snprintf(status_buf, sizeof(status_buf), "HID: %d (K:%d M:%d)", device_count, kbd_count, mouse_count);
                 sh1107_draw_string(&display, 1, 10, status_buf);
-                
+
                 // Line 2: Last event
                 sh1107_draw_string(&display, 1, 25, last_event);
-                
+
                 // Line 3: CDC bytes for testing
                 snprintf(status_buf, sizeof(status_buf), "CDC: %lu B", byte_count);
                 sh1107_draw_string(&display, 1, 40, status_buf);
-                
+
                 sh1107_display(&display);
             }
         }
@@ -272,7 +277,7 @@ uint32_t cdc_task(void) {
                     for (int i = 0; i < MAX_HID_DEVICES; i++) {
                         if (hid_devices[i].is_connected) {
                             char msg[64];
-                            snprintf(msg, sizeof(msg), "DEVICE %d: addr=%d inst=%d len=%d\r\n", 
+                            snprintf(msg, sizeof(msg), "DEVICE %d: addr=%d inst=%d len=%d\r\n",
                                     i, hid_devices[i].dev_addr, hid_devices[i].instance, hid_devices[i].report_desc_len);
                             tud_cdc_write_str(msg);
                         }
@@ -481,12 +486,12 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
     // Simple heuristic approach: assume devices can do both keyboard and mouse
     if (device_slot >= 0) {
         uint8_t itf_protocol = hid_devices[device_slot].itf_protocol;
-        
+
         if (itf_protocol == HID_ITF_PROTOCOL_KEYBOARD) {
             // Standard keyboard
             hid_devices[device_slot].has_keyboard = true;
         } else if (itf_protocol == HID_ITF_PROTOCOL_MOUSE) {
-            // Standard mouse  
+            // Standard mouse
             hid_devices[device_slot].has_mouse = true;
         } else {
             // Unknown protocol - assume it's a composite device like trackpoint
@@ -498,7 +503,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
 
     // Request to receive report
     tuh_hid_receive_report(dev_addr, instance);
-    
+
 }
 
 void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
@@ -518,12 +523,12 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
     if (debug_raw_reports) {
         char debug_msg[128];
         int offset = snprintf(debug_msg, sizeof(debug_msg), "RAW [%d,%d] len=%d: ", dev_addr, instance, len);
-        
+
         for (uint16_t i = 0; i < len && offset < sizeof(debug_msg) - 4; i++) {
             offset += snprintf(debug_msg + offset, sizeof(debug_msg) - offset, "%02X ", report[i]);
         }
         offset += snprintf(debug_msg + offset, sizeof(debug_msg) - offset, "\r\n");
-        
+
         tud_cdc_write_str(debug_msg);
         tud_cdc_write_flush();
     }
@@ -533,12 +538,12 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
         if (hid_devices[i].is_connected &&
             hid_devices[i].dev_addr == dev_addr &&
             hid_devices[i].instance == instance) {
-            
+
             // Handle keyboard and mouse reports
             if (len == 8) {
                 // Keyboard report: [modifier, reserved, key1, key2, key3, key4, key5, key6]
                 uint8_t key = report[2]; // First key
-                
+
                 if (key != 0 && key != last_key) {
                     last_key = key;
                     snprintf(last_event, sizeof(last_event), "K: %02X", key);
@@ -549,7 +554,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
                 int8_t delta_x = (int8_t)report[2];
                 int8_t delta_y = (int8_t)report[3];
                 int8_t wheel = (int8_t)report[4];
-                
+
                 if (buttons != 0 || delta_x != 0 || delta_y != 0 || wheel != 0) {
                     snprintf(last_event, sizeof(last_event), "M: B=%d X=%d Y=%d W=%d", buttons, delta_x, delta_y, wheel);
                 }
