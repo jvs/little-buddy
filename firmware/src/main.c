@@ -66,6 +66,14 @@ int main() {
     // Give everything time to power up properly.
     sleep_ms(2000);
 
+    // Turn off NeoPixel IMMEDIATELY - before anything else
+    gpio_init(21);  // NeoPixel data pin
+    gpio_set_dir(21, GPIO_OUT);
+    gpio_put(21, 0);  // Set data pin low
+    gpio_init(20);  // NeoPixel power pin
+    gpio_set_dir(20, GPIO_OUT);
+    gpio_put(20, 0);  // Turn off power to NeoPixel
+
     // Initialize board
     board_init();
 
@@ -89,15 +97,6 @@ int main() {
         sleep_ms(500);
     }
 
-    // Configure the NeoPixel data pin to ensure it's not driving the LED.
-    gpio_init(21);  // NeoPixel data pin
-    gpio_set_dir(21, GPIO_OUT);
-    gpio_put(21, 0);  // Set data pin low
-
-    // Turn off NeoPixel completely by disabling its power
-    gpio_init(20);  // NeoPixel power pin
-    gpio_set_dir(20, GPIO_OUT);
-    gpio_put(20, 0);  // Turn off power to NeoPixel
 
     // Initialize Boot button (GPIO 23 on RP2040)
     gpio_init(23);
