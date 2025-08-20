@@ -63,9 +63,6 @@ static bool debug_raw_reports = false;
 
 
 int main() {
-    // Give everything time to power up properly.
-    sleep_ms(2000);
-
     // Turn off NeoPixel IMMEDIATELY - before anything else
     gpio_init(21);  // NeoPixel data pin
     gpio_set_dir(21, GPIO_OUT);
@@ -74,8 +71,15 @@ int main() {
     gpio_set_dir(20, GPIO_OUT);
     gpio_put(20, 0);  // Turn off power to NeoPixel
 
+    // Give everything time to power up properly.
+    sleep_ms(2000);
+
     // Initialize board
     board_init();
+
+    // Ensure NeoPixel stays off after board initialization
+    gpio_put(20, 0);  // Ensure NeoPixel power stays off
+    gpio_put(21, 0);  // Ensure NeoPixel data stays low
 
     // Initialize I2C for STEMMA QT connector (GPIO 2=SDA, 3=SCL)
     sleep_ms(500);
