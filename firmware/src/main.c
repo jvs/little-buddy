@@ -61,18 +61,38 @@ static uint8_t last_key = 0;
 // Debug control
 static bool debug_raw_reports = false;
 
+void neopixel_force_gpio_mode() {
+    // Don't touch PIO state machines at all
+    // Just force the GPIO pins to SIO mode
+
+    // This removes the pins from PIO control without
+    // affecting the PIO state machines
+    gpio_set_function(20, GPIO_FUNC_SIO);
+    gpio_set_function(21, GPIO_FUNC_SIO);
+
+    // Now set them as outputs
+    gpio_init(20);
+    gpio_init(21);
+    gpio_set_dir(20, GPIO_OUT);
+    gpio_set_dir(21, GPIO_OUT);
+
+    // Turn off NeoPixel
+    gpio_put(20, 0);  // Power
+    gpio_put(21, 0);  // Data
+
+    // Make sure they stay low
+    gpio_set_slew_rate(20, GPIO_SLEW_RATE_SLOW);
+    gpio_set_slew_rate(21, GPIO_SLEW_RATE_SLOW);
+    gpio_set_drive_strength(20, GPIO_DRIVE_STRENGTH_2MA);
+    gpio_set_drive_strength(21, GPIO_DRIVE_STRENGTH_2MA);
+}
 
 int main() {
     // Give everything time to power up properly.
     sleep_ms(2000);
 
-    // Turn off NeoPixel IMMEDIATELY - before anything else
-    gpio_init(21);  // NeoPixel data pin
-    gpio_set_dir(21, GPIO_OUT);
-    gpio_put(21, 0);  // Set data pin low
-    gpio_init(20);  // NeoPixel power pin
-    gpio_set_dir(20, GPIO_OUT);
-    gpio_put(20, 0);  // Turn off power to NeoPixel
+    // Turn off NeoPixel before anything else.
+    neopixel_force_gpio_mode();
 
     // Initialize board
     board_init();
