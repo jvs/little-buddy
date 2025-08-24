@@ -10,8 +10,7 @@
 void usb_device_init(void);
 void usb_device_task(void);
 
-// Output queue processing
-void usb_device_process_output_queue(usb_output_queue_t* queue);
+void usb_device_flush_output_queue(output_queue_t *queue);
 
 // Interface numbers for device configuration
 enum {

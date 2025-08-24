@@ -28,9 +28,9 @@ void usb_host_init(void);
 void usb_host_task(void);
 
 // Event queue management
-void usb_host_set_event_queue(usb_event_queue_t* queue, uint32_t* sequence_counter);
+void usb_host_set_input_queue(input_queue_t *queue, uint32_t *sequence_counter);
 
 // HID descriptor parsing
-void parse_hid_descriptor(uint8_t dev_addr, uint8_t instance, const uint8_t* desc, uint16_t desc_len);
+void parse_hid_descriptor(uint8_t dev_addr, uint8_t instance, const uint8_t *desc, uint16_t desc_len);
 
 #endif // USB_HOST_H

@@ -38,24 +38,24 @@ void send_mouse_report(int8_t delta_x, int8_t delta_y, uint8_t buttons) {
 // OUTPUT QUEUE PROCESSING
 //--------------------------------------------------------------------+
 
-void usb_device_process_output_queue(usb_output_queue_t* queue) {
-    usb_output_event_t event;
+void usb_device_flush_output_queue(output_queue_t *output_queue) {
+    output_event_t output_event;
 
     // Process all events in the queue
-    while (usb_output_queue_dequeue(queue, &event)) {
-        switch (event.type) {
-            case USB_OUTPUT_MOUSE:
+    while (output_queue_dequeue(output_queue, &output_event)) {
+        switch (output_event.type) {
+            case OUTPUT_MOUSE:
                 send_mouse_report(
-                    event.data.mouse.delta_x,
-                    event.data.mouse.delta_y,
-                    event.data.mouse.buttons
+                    output_event.data.mouse.delta_x,
+                    output_event.data.mouse.delta_y,
+                    output_event.data.mouse.buttons
                 );
                 break;
 
-            case USB_OUTPUT_KEYBOARD:
+            case OUTPUT_KEYBOARD:
                 send_keyboard_report(
-                    event.data.keyboard.modifier,
-                    event.data.keyboard.keycodes
+                    output_event.data.keyboard.modifier,
+                    output_event.data.keyboard.keycodes
                 );
                 break;
 

@@ -14,9 +14,9 @@
 #include "usb_host.h"
 
 // Global USB event queues
-static usb_event_queue_t usb_event_queue;
-static usb_output_queue_t usb_output_queue;
-static uint32_t event_sequence_counter = 0;
+static input_queue_t input_queue;
+static output_queue_t output_queue;
+static uint32_t input_sequence_counter = 0;
 
 
 int main() {
@@ -47,8 +47,8 @@ int main() {
     }
 
     // Initialize USB event queues
-    usb_event_queue_init(&usb_event_queue);
-    usb_output_queue_init(&usb_output_queue);
+    input_queue_init(&input_queue);
+    output_queue_init(&output_queue);
 
     // Initialize event processor
     event_processor_init();
@@ -56,7 +56,7 @@ int main() {
     // Initialize USB device and host
     usb_device_init();
     usb_host_init();
-    usb_host_set_event_queue(&usb_event_queue, &event_sequence_counter);
+    usb_host_set_input_queue(&input_queue, &input_sequence_counter);
 
     // Wait a bit for USB to initialize
     sleep_ms(100);
@@ -64,7 +64,8 @@ int main() {
     // Show USB ready message
     if (display_ok) {
         sh1107_clear(&display);
-        display_icons_draw(&display, ICON_BOMB);
+        // display_icons_draw(&display, ICON_BOMB);
+        sh1107_draw_string(&display, 1, 10, "READY!");
         sh1107_display(&display);
     }
 
@@ -74,10 +75,10 @@ int main() {
         usb_host_task();
 
         // Process input events (transform input -> output)
-        event_processor_process(&usb_event_queue, &usb_output_queue);
+        event_processor_process(&input_queue, &output_queue);
 
-        // Process output queue (send events to computer)
-        usb_device_process_output_queue(&usb_output_queue);
+        // Flush output queue (send events to computer)
+        usb_device_flush_output_queue(&output_queue);
     }
 
     return 0;

@@ -27,8 +27,8 @@ hid_device_info_t hid_devices[MAX_HID_DEVICES];
 #define HID_USAGE_POINTER               0x01
 
 // Event queue management
-static usb_event_queue_t* event_queue = NULL;
-static uint32_t* sequence_counter = NULL;
+static input_queue_t *input_queue = NULL;
+static uint32_t *sequence_counter = NULL;
 
 
 // Tick event timing
@@ -37,7 +37,12 @@ static uint32_t tick_counter = 0;
 
 
 // Forward declarations
-void enqueue_usb_event(usb_event_type_t type, uint8_t device_address, uint8_t interface_id, void* event_data);
+void enqueue_input_event(
+    input_type_t type,
+    uint8_t device_address,
+    uint8_t interface_id,
+    void *event_data
+);
 
 void usb_host_init(void) {
     // Clear HID devices array
@@ -63,22 +68,22 @@ void usb_host_task(void) {
         last_tick_us = current_time_us;
         tick_counter++;
 
-        usb_tick_data_t tick_data;
+        tick_data_t tick_data;
         tick_data.tick_count = tick_counter;
         tick_data.delta_us = current_time_us - last_tick_us;
-        enqueue_usb_event(USB_EVENT_TICK, 0, 0, &tick_data);
+        enqueue_input_event(INPUT_TICK, 0, 0, &tick_data);
     }
 }
 
-void usb_host_set_event_queue(usb_event_queue_t* queue, uint32_t* seq_counter) {
-    event_queue = queue;
+void usb_host_set_input_queue(input_queue_t *queue, uint32_t *seq_counter) {
+    input_queue = queue;
     sequence_counter = seq_counter;
 }
 
-void enqueue_usb_event(usb_event_type_t type, uint8_t device_address, uint8_t interface_id, void* event_data) {
-    if (!event_queue || !sequence_counter) return;
+void enqueue_input_event(input_type_t type, uint8_t device_address, uint8_t interface_id, void *event_data) {
+    if (!input_queue || !sequence_counter) return;
 
-    usb_event_t event;
+    input_event_t event;
     event.type = type;
     event.timestamp_ms = time_us_32() / 1000;  // Convert microseconds to milliseconds
     event.sequence_id = ++(*sequence_counter);
@@ -86,27 +91,27 @@ void enqueue_usb_event(usb_event_type_t type, uint8_t device_address, uint8_t in
 
     // Copy event-specific data
     switch (type) {
-        case USB_EVENT_MOUSE:
+        case INPUT_MOUSE:
             if (event_data) {
-                event.data.mouse = *(usb_mouse_data_t*)event_data;
+                event.data.mouse = *(mouse_data_t*)event_data;
             }
             break;
-        case USB_EVENT_KEYBOARD:
+        case INPUT_KEYBOARD:
             if (event_data) {
-                event.data.keyboard = *(usb_keyboard_data_t*)event_data;
+                event.data.keyboard = *(keyboard_data_t*)event_data;
             }
             break;
-        case USB_EVENT_DEVICE_CONNECTED:
-        case USB_EVENT_DEVICE_DISCONNECTED:
+        case INPUT_DEVICE_CONNECTED:
+        case INPUT_DEVICE_DISCONNECTED:
             if (event_data) {
-                event.data.device = *(usb_device_data_t*)event_data;
+                event.data.device = *(device_data_t*)event_data;
             } else {
                 event.data.device.device_address = device_address;
                 event.data.device.instance = interface_id;
                 event.data.device.device_type = "HID";
             }
             break;
-        case USB_EVENT_TICK:
+        case INPUT_TICK:
             if (event_data) {
                 event.data.tick = *(usb_tick_data_t*)event_data;
             }
@@ -116,7 +121,7 @@ void enqueue_usb_event(usb_event_type_t type, uint8_t device_address, uint8_t in
     }
 
     // Try to enqueue the event
-    if (!usb_event_queue_enqueue(event_queue, &event)) {
+    if (!input_queue_enqueue(event_queue, &event)) {
         // Queue is full
     }
 }
@@ -177,7 +182,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
     device_data.device_address = dev_addr;
     device_data.instance = instance;
     device_data.device_type = "HID";
-    enqueue_usb_event(USB_EVENT_DEVICE_CONNECTED, dev_addr, instance, &device_data);
+    enqueue_input_event(INPUT_DEVICE_CONNECTED, dev_addr, instance, &device_data);
 }
 
 void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
@@ -186,7 +191,7 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
     device_data.device_address = dev_addr;
     device_data.instance = instance;
     device_data.device_type = "HID";
-    enqueue_usb_event(USB_EVENT_DEVICE_DISCONNECTED, dev_addr, instance, &device_data);
+    enqueue_input_event(INPUT_DEVICE_DISCONNECTED, dev_addr, instance, &device_data);
 
     // Clear device info quietly
     for (int i = 0; i < MAX_HID_DEVICES; i++) {
@@ -209,17 +214,18 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
             // Handle keyboard and mouse reports
             if (len == 8) {
                 // Trackpoint keyboard report: [modifier, reserved, key1, key2, key3, key4, key5, key6]
-                usb_keyboard_data_t kbd_data;
-                memcpy(&kbd_data.keycodes, report + 2, 6);
-                enqueue_usb_event(USB_EVENT_KEYBOARD, dev_addr, instance, &kbd_data);
+                keyboard_data_t keyboard_data;
+                keyboard_data.modifier = report[0];
+                memcpy(&keyboard_data.keycodes, report + 2, 6);
+                enqueue_input_event(INPUT_KEYBOARD, dev_addr, instance, &keyboard_data);
             } else if (len == 6 && report[0] == 0x01) {
                 // Trackpoint mouse report: [0x01, buttons, x, y, wheel, ?]
-                usb_mouse_data_t mouse_data;
+                mouse_data_t mouse_data;
                 mouse_data.buttons = report[1];
                 mouse_data.delta_x = (int8_t)report[2];
                 mouse_data.delta_y = (int8_t)report[3];
                 mouse_data.scroll = (int8_t)report[4];
-                enqueue_usb_event(USB_EVENT_MOUSE, dev_addr, instance, &mouse_data);
+                enqueue_usb_event(INPUT_MOUSE, dev_addr, instance, &mouse_data);
             }
             break;
         }
@@ -233,8 +239,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
 // HID DESCRIPTOR PARSER
 //--------------------------------------------------------------------+
 
-void parse_hid_descriptor(uint8_t dev_addr, uint8_t instance, const uint8_t* desc, uint16_t desc_len) {
-
+void parse_hid_descriptor(uint8_t dev_addr, uint8_t instance, const uint8_t *desc, uint16_t desc_len) {
     // Find the device slot
     int device_slot = -1;
     for (int i = 0; i < MAX_HID_DEVICES; i++) {

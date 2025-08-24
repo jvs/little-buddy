@@ -4,9 +4,9 @@
 // FORWARD DECLARATIONS
 //--------------------------------------------------------------------+
 
-static void process_tick_event(const usb_tick_data_t* tick_data);
-static void process_device_connected(const usb_device_data_t* device_data);
-static void process_device_disconnected(const usb_device_data_t* device_data);
+static void process_tick_event(const tick_data_t* tick_data);
+static void process_device_connected(const device_data_t* device_data);
+static void process_device_disconnected(const device_data_t* device_data);
 
 //--------------------------------------------------------------------+
 // EVENT PROCESSOR STATE
@@ -29,40 +29,40 @@ void event_processor_reset(void) {
     // Useful for switching modes or recovering from errors
 }
 
-void event_processor_process(usb_event_queue_t* input_queue, usb_output_queue_t* output_queue) {
-    usb_event_t input_event;
-    usb_output_event_t output_event;
+void event_processor_process(input_queue_t *input_queue, output_queue_t *output_queue) {
+    input_event_t input_event;
+    output_event_t output_event;
 
     // Process all events in the input queue
-    while (usb_event_queue_dequeue(input_queue, &input_event)) {
+    while (input_queue_dequeue(input_queue, &input_event)) {
         switch (input_event.type) {
-            case USB_EVENT_MOUSE:
+            case INPUT_MOUSE:
                 // Pass mouse events through unchanged (for now)
-                output_event.type = USB_OUTPUT_MOUSE;
+                output_event.type = OUTPUT_MOUSE;
                 output_event.data.mouse = input_event.data.mouse;
 
                 (void)usb_output_queue_enqueue(output_queue, &output_event);
                 break;
 
-            case USB_EVENT_KEYBOARD:
+            case INPUT_KEYBOARD:
                 // Pass keyboard events through unchanged (for now)
-                output_event.type = USB_OUTPUT_KEYBOARD;
+                output_event.type = OUTPUT_KEYBOARD;
                 output_event.data.keyboard = input_event.data.keyboard;
 
                 (void)usb_output_queue_enqueue(output_queue, &output_event);
                 break;
 
-            case USB_EVENT_TICK:
+            case INPUT_TICK:
                 // Process tick events (currently ignored)
                 process_tick_event(&input_event.data.tick);
                 break;
 
-            case USB_EVENT_DEVICE_CONNECTED:
+            case INPUT_DEVICE_CONNECTED:
                 // Handle device connection
                 process_device_connected(&input_event.data.device);
                 break;
 
-            case USB_EVENT_DEVICE_DISCONNECTED:
+            case INPUT_DEVICE_DISCONNECTED:
                 // Handle device disconnection
                 process_device_disconnected(&input_event.data.device);
                 break;
@@ -78,19 +78,19 @@ void event_processor_process(usb_event_queue_t* input_queue, usb_output_queue_t*
 // EVENT PROCESSING HELPERS
 //--------------------------------------------------------------------+
 
-static void process_tick_event(const usb_tick_data_t* tick_data) {
+static void process_tick_event(const tick_data_t* tick_data) {
     // Handle tick events here
     // Examples: timeouts, periodic actions, state machines
     (void)tick_data; // Suppress unused parameter warning for now
 }
 
-static void process_device_connected(const usb_device_data_t* device_data) {
+static void process_device_connected(const device_data_t* device_data) {
     // Handle device connection
     // Examples: initialize device-specific settings, update state
     (void)device_data; // Suppress unused parameter warning for now
 }
 
-static void process_device_disconnected(const usb_device_data_t* device_data) {
+static void process_device_disconnected(const device_data_t* device_data) {
     // Handle device disconnection
     // Examples: cleanup device state, reset mappings
     (void)device_data; // Suppress unused parameter warning for now
