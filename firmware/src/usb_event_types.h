@@ -67,4 +67,4 @@ typedef struct {
 // Timing utilities (handles uint32_t wraparound correctly)
 uint32_t time_delta_ms(uint32_t start_ms, uint32_t end_ms);
 
-#endif // USB_EVENT_TYPES_H
+#endif

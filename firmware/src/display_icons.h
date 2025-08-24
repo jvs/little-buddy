@@ -11,4 +11,4 @@ typedef enum {
 
 void display_icons_draw(sh1107_t* display, icon_t icon);
 
-#endif // DISPLAY_ICONS_H
+#endif

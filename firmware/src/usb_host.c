@@ -1,11 +1,29 @@
 #include "usb_host.h"
+
 #include <pico/stdlib.h>
 #include <pio_usb.h>
-#include <string.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
+#include <string.h>
+#include <tusb.h>
 
 #include "usb_event_types.h"
 #include "usb_input.h"
+
+// HID device tracking
+typedef struct {
+    uint8_t dev_addr;
+    uint8_t instance;
+    uint8_t itf_protocol;  // HID_ITF_PROTOCOL_KEYBOARD, HID_ITF_PROTOCOL_MOUSE, etc.
+    bool is_connected;
+    uint16_t report_desc_len;
+    bool has_keyboard;  // Detected keyboard usage in descriptor
+    bool has_mouse;     // Detected mouse usage in descriptor
+    uint8_t input_report_size;  // Size of input reports
+} hid_device_info_t;
+
+#define MAX_HID_DEVICES 4
 
 // Global HID device array
 hid_device_info_t hid_devices[MAX_HID_DEVICES];
@@ -224,89 +242,4 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
 
     // Continue to request next report
     tuh_hid_receive_report(dev_addr, instance);
-}
-
-//--------------------------------------------------------------------+
-// HID DESCRIPTOR PARSER
-//--------------------------------------------------------------------+
-
-void parse_hid_descriptor(uint8_t dev_addr, uint8_t instance, const uint8_t *desc, uint16_t desc_len) {
-    // Find the device slot
-    int device_slot = -1;
-    for (int i = 0; i < MAX_HID_DEVICES; i++) {
-        if (hid_devices[i].is_connected &&
-            hid_devices[i].dev_addr == dev_addr &&
-            hid_devices[i].instance == instance) {
-            device_slot = i;
-            break;
-        }
-    }
-
-    if (device_slot == -1) return;
-
-    uint16_t pos = 0;
-    uint8_t current_usage_page = 0;
-    uint8_t current_usage = 0;
-    uint8_t report_size = 0;
-    uint8_t report_count = 0;
-
-    while (pos < desc_len) {
-        uint8_t item = desc[pos];
-        uint8_t size = item & 0x03;
-        uint8_t type = (item >> 2) & 0x03;
-        uint8_t tag = (item >> 4) & 0x0F;
-
-        pos++; // Move past the item byte
-
-        // Extract data based on size
-        uint32_t data = 0;
-        for (int i = 0; i < size; i++) {
-            if (pos + i < desc_len) {
-                data |= (desc[pos + i] << (i * 8));
-            }
-        }
-        pos += size;
-
-        // Parse based on tag
-        switch (item & 0xFC) { // Mask out size bits
-            case HID_ITEM_USAGE_PAGE:
-                current_usage_page = data;
-                break;
-
-            case HID_ITEM_USAGE:
-                current_usage = data;
-
-                // Check for keyboard or mouse usage
-                if (current_usage_page == HID_USAGE_PAGE_GENERIC_DESKTOP) {
-                    if (current_usage == HID_USAGE_KEYBOARD) {
-                        hid_devices[device_slot].has_keyboard = true;
-                    } else if (current_usage == HID_USAGE_MOUSE || current_usage == HID_USAGE_POINTER) {
-                        hid_devices[device_slot].has_mouse = true;
-                    }
-                } else if (current_usage_page == HID_USAGE_PAGE_KEYBOARD) {
-                    hid_devices[device_slot].has_keyboard = true;
-                }
-                break;
-
-            case HID_ITEM_REPORT_SIZE:
-                report_size = data;
-                break;
-
-            case HID_ITEM_REPORT_COUNT:
-                report_count = data;
-                break;
-
-            case HID_ITEM_INPUT:
-                // This defines an input report field
-                if (report_size > 0 && report_count > 0) {
-                    uint8_t field_size = (report_size * report_count + 7) / 8; // Convert bits to bytes
-                    if (field_size > hid_devices[device_slot].input_report_size) {
-                        hid_devices[device_slot].input_report_size += field_size;
-                    }
-                }
-                break;
-        }
-    }
-
-    // Descriptor parsed
 }

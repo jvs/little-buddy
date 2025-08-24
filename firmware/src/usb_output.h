@@ -8,4 +8,4 @@ bool usb_output_enqueue(const usb_output_event_t *event);
 bool usb_output_dequeue(usb_output_event_t *event);
 uint32_t usb_output_count(void);
 
-#endif // USB_OUTPUT_QUEUE_H
+#endif

@@ -3,4 +3,4 @@
 
 void event_processor_process(void);
 
-#endif // EVENT_PROCESSOR_H
+#endif
