@@ -14,9 +14,9 @@ typedef enum {
 } input_type_t;
 
 typedef enum {
-    USB_OUTPUT_NONE = 0,
-    USB_OUTPUT_MOUSE,
-    USB_OUTPUT_KEYBOARD
+    OUTPUT_NONE = 0,
+    OUTPUT_MOUSE,
+    OUTPUT_KEYBOARD
 } output_type_t;
 
 typedef struct {
@@ -91,9 +91,9 @@ uint32_t input_queue_count(const input_queue_t *queue);
 uint32_t time_delta_ms(uint32_t start_ms, uint32_t end_ms);
 
 // Output queue functions
-void output_queue_init(usb_output_queue_t *queue);
-bool output_queue_enqueue(usb_output_queue_t *queue, const usb_output_event_t *event);
-bool output_queue_dequeue(usb_output_queue_t *queue, usb_output_event_t *event);
-uint32_t output_queue_count(const usb_output_queue_t *queue);
+void output_queue_init(output_queue_t *queue);
+bool output_queue_enqueue(output_queue_t *queue, const output_event_t *event);
+bool output_queue_dequeue(output_queue_t *queue, output_event_t *event);
+uint32_t output_queue_count(const output_queue_t *queue);
 
 #endif

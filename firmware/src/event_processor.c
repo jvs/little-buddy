@@ -41,7 +41,7 @@ void event_processor_process(input_queue_t *input_queue, output_queue_t *output_
                 output_event.type = OUTPUT_MOUSE;
                 output_event.data.mouse = input_event.data.mouse;
 
-                (void)usb_output_queue_enqueue(output_queue, &output_event);
+                (void)output_queue_enqueue(output_queue, &output_event);
                 break;
 
             case INPUT_KEYBOARD:
@@ -49,7 +49,7 @@ void event_processor_process(input_queue_t *input_queue, output_queue_t *output_
                 output_event.type = OUTPUT_KEYBOARD;
                 output_event.data.keyboard = input_event.data.keyboard;
 
-                (void)usb_output_queue_enqueue(output_queue, &output_event);
+                (void)output_queue_enqueue(output_queue, &output_event);
                 break;
 
             case INPUT_TICK:
