@@ -10,6 +10,7 @@
 #include "event_processor.h"
 #include "sh1107_display.h"
 #include "usb_device.h"
+#include "usb_host.h"
 #include "usb_input.h"
 #include "usb_output.h"
 

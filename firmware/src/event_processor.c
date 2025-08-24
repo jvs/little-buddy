@@ -1,7 +1,7 @@
 #include "event_processor.h"
 #include "usb_event_types.h"
-#include "usb_inputs.h"
-#include "usb_outputs.h"
+#include "usb_input.h"
+#include "usb_output.h"
 
 
 static void process_tick_event(const usb_tick_data_t *tick_data);

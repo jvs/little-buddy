@@ -1,6 +1,8 @@
 #ifndef USB_INPUT_H
 #define USB_INPUT_H
 
+#include "usb_event_types.h"
+
 void usb_input_init(void);
 bool usb_input_enqueue(const usb_input_event_t *event);
 bool usb_input_dequeue(usb_input_event_t *event);
