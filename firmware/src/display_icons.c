@@ -86,22 +86,8 @@ static const uint8_t icon_bomb_data[1024] = {
 };
 
 
-void display_icons_draw_data(sh1107_t* display, const uint8_t* icon_data) {
-    // Copy icon data directly to framebuffer (fastest)
-    memcpy(display->framebuffer, icon_data, 1024);
-    sh1107_display(display);
-
-    // OR send page by page to display (if you want to avoid framebuffer)
-    for (int page = 0; page < 8; page++) {
-        sh1107_set_page_address(display, page);
-        sh1107_set_column_address(display, 0);
-        sh1107_write_data(display, &icon_data[page * 128], 128);
-    }
-}
-
-
 void display_icons_draw(sh1107_t* display, icon_t icon) {
     switch (icon) {
-        case ICON_BOMB: display_icons_draw_data(display, icon_bomb_data);
+        case ICON_BOMB: sh1107_draw_buffer(display, icon_bomb_data);
     }
 }

@@ -110,7 +110,7 @@ int main() {
     }
 
     static uint32_t byte_count = 0;
-    char status_buf[32];
+    // char status_buf[32];
 
     // Tick event timing
     static uint32_t last_tick_us = 0;
