@@ -37,20 +37,20 @@ void event_processor_process(usb_event_queue_t* input_queue, usb_output_queue_t*
         switch (input_event.type) {
             case USB_EVENT_MOUSE:
                 // Pass mouse events through unchanged (for now)
-                usb_output_event_t output_event;
-                output_event.type = USB_OUTPUT_MOUSE;
-                output_event.data.mouse = input_event.data.mouse;
+                usb_output_event_t output_mouse_event;
+                output_mouse_event.type = USB_OUTPUT_MOUSE;
+                output_mouse_event.data.mouse = input_event.data.mouse;
 
-                (void) usb_output_queue_enqueue(queue, &output_event);
+                (void)usb_output_queue_enqueue(output_queue, &output_mouse_event);
                 break;
 
             case USB_EVENT_KEYBOARD:
                 // Pass keyboard events through unchanged (for now)
-                usb_output_event_t output_event;
-                output_event.type = USB_OUTPUT_KEYBOARD;
-                output_event.data.keyboard = input_event.data.keyboard;
+                usb_output_event_t output_keyboard_event;
+                output_keyboard_event.type = USB_OUTPUT_KEYBOARD;
+                output_keyboard_event.data.keyboard = input_event.data.keyboard;
 
-                (void) usb_output_queue_enqueue(queue, &output_event);
+                (void)usb_output_queue_enqueue(output_queue, &output_keyboard_event);
                 break;
 
             case USB_EVENT_TICK:
