@@ -205,13 +205,13 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
             // Handle keyboard and mouse reports
             if (len == 8) {
                 // Trackpoint keyboard report: [modifier, reserved, key1, key2, key3, key4, key5, key6]
-                keyboard_data_t keyboard_data;
+                usb_keyboard_data_t keyboard_data;
                 keyboard_data.modifier = report[0];
                 memcpy(&keyboard_data.keycodes, report + 2, 6);
                 enqueue_input_event(USB_INPUT_KEYBOARD, dev_addr, instance, &keyboard_data);
             } else if (len == 6 && report[0] == 0x01) {
                 // Trackpoint mouse report: [0x01, buttons, x, y, wheel, ?]
-                mouse_data_t mouse_data;
+                usb_mouse_data_t mouse_data;
                 mouse_data.buttons = report[1];
                 mouse_data.delta_x = (int8_t)report[2];
                 mouse_data.delta_y = (int8_t)report[3];
