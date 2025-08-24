@@ -4,6 +4,9 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "usb_event_types.h"
+#include "usb_input.h"
+
 // Global HID device array
 hid_device_info_t hid_devices[MAX_HID_DEVICES];
 
