@@ -20,7 +20,7 @@ void usb_device_task(void) {
 // HID DEVICE HELPER FUNCTIONS
 //--------------------------------------------------------------------+
 
-void send_keyboard_report(uint8_t modifier, uint8_t keycodes[6]) {
+void send_keyboard_report(uint8_t modifier, const uint8_t keycodes[6]) {
     // Check if keyboard instance is ready
     if (!tud_hid_n_ready(0)) return;
 
