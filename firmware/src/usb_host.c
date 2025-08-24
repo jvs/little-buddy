@@ -33,6 +33,9 @@ static uint32_t* sequence_counter = NULL;
 // Debug control
 static bool debug_raw_reports = false;
 
+// Keyboard state tracking for press/release detection
+static uint8_t prev_keyboard_report[MAX_HID_DEVICES][8] = {0};
+
 
 // Forward declarations
 void enqueue_usb_event(usb_event_type_t type, uint8_t device_address, uint8_t interface_id, void* event_data);
@@ -227,16 +230,56 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
             // Handle keyboard and mouse reports
             if (len == 8) {
                 // Keyboard report: [modifier, reserved, key1, key2, key3, key4, key5, key6]
-                uint8_t modifier = report[0];
-                uint8_t key = report[2]; // First key
+                uint8_t* prev_report = prev_keyboard_report[i];
 
-                if (key != 0) {
-                    // Enqueue keyboard event
-                    usb_keyboard_data_t kbd_data;
-                    kbd_data.keycode = key;
-                    kbd_data.modifier = modifier;
-                    kbd_data.pressed = true; // Assuming key press since key != 0
-                    enqueue_usb_event(USB_EVENT_KEYBOARD, dev_addr, instance, &kbd_data);
+                // Compare current report with previous to detect changes
+                if (memcmp(prev_report, report, 8) != 0) {
+                    // Check for key releases (in prev but not in current)
+                    for (int k = 2; k < 8; k++) {  // Keys are in bytes 2-7
+                        if (prev_report[k] != 0) {
+                            // This key was pressed before, check if still pressed
+                            bool still_pressed = false;
+                            for (int j = 2; j < 8; j++) {
+                                if (report[j] == prev_report[k]) {
+                                    still_pressed = true;
+                                    break;
+                                }
+                            }
+                            if (!still_pressed) {
+                                // Key was released
+                                usb_keyboard_data_t kbd_data;
+                                kbd_data.keycode = prev_report[k];
+                                kbd_data.modifier = prev_report[0];  // Use previous modifier
+                                kbd_data.pressed = false;
+                                enqueue_usb_event(USB_EVENT_KEYBOARD, dev_addr, instance, &kbd_data);
+                            }
+                        }
+                    }
+
+                    // Check for key presses (in current but not in prev)
+                    for (int k = 2; k < 8; k++) {  // Keys are in bytes 2-7
+                        if (report[k] != 0) {
+                            // This key is pressed now, check if it's new
+                            bool was_pressed = false;
+                            for (int j = 2; j < 8; j++) {
+                                if (prev_report[j] == report[k]) {
+                                    was_pressed = true;
+                                    break;
+                                }
+                            }
+                            if (!was_pressed) {
+                                // New key press
+                                usb_keyboard_data_t kbd_data;
+                                kbd_data.keycode = report[k];
+                                kbd_data.modifier = report[0];
+                                kbd_data.pressed = true;
+                                enqueue_usb_event(USB_EVENT_KEYBOARD, dev_addr, instance, &kbd_data);
+                            }
+                        }
+                    }
+
+                    // Store current report for next comparison
+                    memcpy(prev_report, report, 8);
                 }
             } else if (len == 6 && report[0] == 0x01) {
                 // Trackpoint mouse report: [0x01, buttons, x, y, wheel, ?]

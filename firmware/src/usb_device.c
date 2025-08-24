@@ -44,7 +44,7 @@ void send_mouse_report(int8_t delta_x, int8_t delta_y, uint8_t buttons) {
 
 void usb_device_process_output_queue(usb_output_queue_t* queue) {
     usb_output_event_t event;
-    
+
     // Process all events in the queue
     while (usb_output_queue_dequeue(queue, &event)) {
         switch (event.type) {
@@ -55,7 +55,7 @@ void usb_device_process_output_queue(usb_output_queue_t* queue) {
                     event.data.mouse.buttons
                 );
                 break;
-                
+
             case USB_OUTPUT_KEYBOARD:
                 // For keyboard, we need to handle press/release differently
                 if (event.data.keyboard.pressed) {
@@ -68,7 +68,7 @@ void usb_device_process_output_queue(usb_output_queue_t* queue) {
                     send_keyboard_report(0, 0);
                 }
                 break;
-                
+
             default:
                 // Unknown event type, skip
                 break;
