@@ -16,7 +16,6 @@
 // Global USB event queues
 static input_queue_t input_queue;
 static output_queue_t output_queue;
-static uint32_t input_sequence_counter = 0;
 
 
 int main() {
@@ -56,7 +55,7 @@ int main() {
     // Initialize USB device and host
     usb_device_init();
     usb_host_init();
-    usb_host_set_input_queue(&input_queue, &input_sequence_counter);
+    usb_host_set_input_queue(&input_queue);
 
     // Wait a bit for USB to initialize
     sleep_ms(100);

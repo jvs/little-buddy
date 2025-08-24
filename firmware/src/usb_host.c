@@ -28,7 +28,7 @@ hid_device_info_t hid_devices[MAX_HID_DEVICES];
 
 // Event queue management
 static input_queue_t *input_queue = NULL;
-static uint32_t *sequence_counter = NULL;
+static uint32_t input_counter = 0;
 
 
 // Tick event timing
@@ -75,18 +75,17 @@ void usb_host_task(void) {
     }
 }
 
-void usb_host_set_input_queue(input_queue_t *queue, uint32_t *seq_counter) {
+void usb_host_set_input_queue(input_queue_t *queue) {
     input_queue = queue;
-    sequence_counter = seq_counter;
 }
 
 void enqueue_input_event(input_type_t type, uint8_t device_address, uint8_t interface_id, void *event_data) {
-    if (!input_queue || !sequence_counter) return;
+    if (!input_queue) return;
 
     input_event_t event;
     event.type = type;
     event.timestamp_ms = time_us_32() / 1000;  // Convert microseconds to milliseconds
-    event.sequence_id = ++(*sequence_counter);
+    event.sequence_id = ++input_counter;
     event.interface_id = interface_id;
 
     // Copy event-specific data
