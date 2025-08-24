@@ -62,7 +62,6 @@ typedef struct {
 void usb_event_queue_init(usb_event_queue_t* queue);
 bool usb_event_queue_enqueue(usb_event_queue_t* queue, const usb_event_t* event);
 bool usb_event_queue_dequeue(usb_event_queue_t* queue, usb_event_t* event);
-bool usb_event_queue_is_empty(const usb_event_queue_t* queue);
 uint32_t usb_event_queue_count(const usb_event_queue_t* queue);
 
 // Timing utilities (handles uint32_t wraparound correctly)

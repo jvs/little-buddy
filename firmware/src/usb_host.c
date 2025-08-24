@@ -255,20 +255,12 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
                 }
             } else if (len == 6 && report[0] == 0x01) {
                 // Trackpoint mouse report: [0x01, buttons, x, y, wheel, ?]
-                uint8_t buttons = report[1];
-                int8_t delta_x = (int8_t)report[2];
-                int8_t delta_y = (int8_t)report[3];
-                int8_t wheel = (int8_t)report[4];
-
-                if (buttons != 0 || delta_x != 0 || delta_y != 0 || wheel != 0) {
-                    // Enqueue mouse event
-                    usb_mouse_data_t mouse_data;
-                    mouse_data.delta_x = delta_x;
-                    mouse_data.delta_y = delta_y;
-                    mouse_data.scroll = wheel;
-                    mouse_data.buttons = buttons;
-                    enqueue_usb_event(USB_EVENT_MOUSE, dev_addr, instance, &mouse_data);
-                }
+                usb_mouse_data_t mouse_data;
+                mouse_data.buttons = report[1];
+                mouse_data.delta_x = (int8_t)report[2];
+                mouse_data.delta_y = (int8_t)report[3];
+                mouse_data.scroll = (int8_t)report[4];
+                enqueue_usb_event(USB_EVENT_MOUSE, dev_addr, instance, &mouse_data);
             }
             break;
         }

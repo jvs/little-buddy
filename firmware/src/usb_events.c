@@ -29,10 +29,6 @@ bool usb_event_queue_dequeue(usb_event_queue_t* queue, usb_event_t* event) {
     return true;
 }
 
-bool usb_event_queue_is_empty(const usb_event_queue_t* queue) {
-    return queue->count == 0;
-}
-
 uint32_t usb_event_queue_count(const usb_event_queue_t* queue) {
     return queue->count;
 }
