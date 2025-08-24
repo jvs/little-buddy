@@ -49,7 +49,7 @@ int main() {
     // Initialize USB event queues
     usb_event_queue_init(&usb_event_queue);
     usb_output_queue_init(&usb_output_queue);
-    
+
     // Initialize event processor
     event_processor_init();
 
@@ -85,10 +85,10 @@ int main() {
         // USB tasks
         usb_device_task();
         usb_host_task();
-        
+
         // Process input events (transform input -> output)
         event_processor_process(&usb_event_queue, &usb_output_queue);
-        
+
         // Process output queue (send events to computer)
         usb_device_process_output_queue(&usb_output_queue);
     }
