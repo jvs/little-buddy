@@ -225,7 +225,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
                 mouse_data.delta_x = (int8_t)report[2];
                 mouse_data.delta_y = (int8_t)report[3];
                 mouse_data.scroll = (int8_t)report[4];
-                enqueue_usb_event(INPUT_MOUSE, dev_addr, instance, &mouse_data);
+                enqueue_input_event(INPUT_MOUSE, dev_addr, instance, &mouse_data);
             }
             break;
         }
