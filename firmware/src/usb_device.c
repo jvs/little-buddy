@@ -40,29 +40,29 @@ void usb_device_task(void) {
 // HID DEVICE HELPER FUNCTIONS
 //--------------------------------------------------------------------+
 
-void send_keyboard_report(usb_keyboard_data_t keyboard_data) {
+void send_keyboard_report(usb_keyboard_data_t *keyboard_data) {
     // Check if keyboard instance is ready
     if (!tud_hid_n_ready(0)) return;
 
     tud_hid_n_keyboard_report(
         0,
         0,
-        keyboard_data.modifier,
-        keyboard_data.keycodes
+        keyboard_data->modifier,
+        keyboard_data->keycodes
     );
 }
 
 
-void send_mouse_report(usb_mouse_data_t mouse_data) {
+void send_mouse_report(usb_mouse_data_t *mouse_data) {
     // Check if mouse instance is ready
     if (!tud_hid_n_ready(1)) return;
 
     tud_hid_n_mouse_report(
         1,
         0,
-        mouse_data.buttons,
-        mouse_data.delta_x,
-        mouse_data.delta_y,
+        mouse_data->buttons,
+        mouse_data->delta_x,
+        mouse_data->delta_y,
         0,
         0
     );
@@ -80,11 +80,11 @@ static void flush_output_events(void) {
     while (usb_output_dequeue(&event)) {
         switch (event.type) {
             case USB_OUTPUT_MOUSE:
-                send_mouse_report(event.data.mouse);
+                send_mouse_report(&event.data.mouse);
                 break;
 
             case USB_OUTPUT_KEYBOARD:
-                send_keyboard_report(event.data.keyboard);
+                send_keyboard_report(&event.data.keyboard);
                 break;
 
             default:
