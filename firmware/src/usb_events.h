@@ -101,8 +101,4 @@ bool usb_output_queue_dequeue(usb_output_queue_t* queue, usb_output_event_t* eve
 bool usb_output_queue_is_empty(const usb_output_queue_t* queue);
 uint32_t usb_output_queue_count(const usb_output_queue_t* queue);
 
-// Helper functions for enqueuing output events
-// bool usb_output_enqueue_mouse(usb_output_queue_t* queue, int8_t delta_x, int8_t delta_y, uint8_t buttons, int8_t scroll);
-// bool usb_output_enqueue_keyboard(usb_output_queue_t* queue, uint8_t keycode, uint8_t modifier, bool pressed);
-
 #endif

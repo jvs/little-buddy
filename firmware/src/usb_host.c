@@ -31,9 +31,6 @@ static usb_event_queue_t* event_queue = NULL;
 static uint32_t* sequence_counter = NULL;
 
 
-// Keyboard state tracking for press/release detection
-static uint8_t prev_keyboard_report[MAX_HID_DEVICES][8] = {0};
-//
 // Tick event timing
 static uint32_t last_tick_us = 0;
 static uint32_t tick_counter = 0;

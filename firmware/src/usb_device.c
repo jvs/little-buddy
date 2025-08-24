@@ -20,15 +20,11 @@ void usb_device_task(void) {
 // HID DEVICE HELPER FUNCTIONS
 //--------------------------------------------------------------------+
 
-void send_keyboard_report(uint8_t modifier, uint8_t keycode) {
+void send_keyboard_report(uint8_t modifier, uint8_t keycodes[6]) {
     // Check if keyboard instance is ready
     if (!tud_hid_n_ready(0)) return;
 
-    // Keyboard report format: [key1, key2, key3, key4, key5, key6]
-    uint8_t keyreport[6] = {0};
-    keyreport[0] = keycode;
-
-    tud_hid_n_keyboard_report(0, 0, modifier, keyreport);
+    tud_hid_n_keyboard_report(0, 0, modifier, keycodes);
 }
 
 void send_mouse_report(int8_t delta_x, int8_t delta_y, uint8_t buttons) {
@@ -57,16 +53,10 @@ void usb_device_process_output_queue(usb_output_queue_t* queue) {
                 break;
 
             case USB_OUTPUT_KEYBOARD:
-                // For keyboard, we need to handle press/release differently
-                if (event.data.keyboard.pressed) {
-                    send_keyboard_report(
-                        event.data.keyboard.modifier,
-                        event.data.keyboard.keycode
-                    );
-                } else {
-                    // Key release - send with no keycode
-                    send_keyboard_report(0, 0);
-                }
+                send_keyboard_report(
+                    event.data.keyboard.modifier,
+                    event.data.keyboard.keycodes
+                );
                 break;
 
             default:
