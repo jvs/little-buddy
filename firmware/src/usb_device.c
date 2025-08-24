@@ -1,5 +1,6 @@
 #include "usb_device.h"
-#include "usb_host.h"  // For debug control
+#include "usb_event_types.h"
+#include "usb_output.h"
 #include <pico/stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -38,24 +39,24 @@ void send_mouse_report(int8_t delta_x, int8_t delta_y, uint8_t buttons) {
 // OUTPUT QUEUE PROCESSING
 //--------------------------------------------------------------------+
 
-void usb_device_flush_output_queue(output_queue_t *output_queue) {
-    output_event_t output_event;
+void usb_device_flush_output(void) {
+    usb_output_event_t event;
 
     // Process all events in the queue
-    while (output_queue_dequeue(output_queue, &output_event)) {
-        switch (output_event.type) {
-            case OUTPUT_MOUSE:
+    while (usb_output_dequeue(&event)) {
+        switch (event.type) {
+            case USB_OUTPUT_MOUSE:
                 send_mouse_report(
-                    output_event.data.mouse.delta_x,
-                    output_event.data.mouse.delta_y,
-                    output_event.data.mouse.buttons
+                    event.data.mouse.delta_x,
+                    event.data.mouse.delta_y,
+                    event.data.mouse.buttons
                 );
                 break;
 
-            case OUTPUT_KEYBOARD:
+            case USB_OUTPUT_KEYBOARD:
                 send_keyboard_report(
-                    output_event.data.keyboard.modifier,
-                    output_event.data.keyboard.keycodes
+                    event.data.keyboard.modifier,
+                    event.data.keyboard.keycodes
                 );
                 break;
 

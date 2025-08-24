@@ -4,9 +4,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <tusb.h>
-#include "usb_events.h"
 
 // HID device tracking
+// TODO: Move to the .c file if possible
 typedef struct {
     uint8_t dev_addr;
     uint8_t instance;
@@ -18,19 +18,19 @@ typedef struct {
     uint8_t input_report_size;  // Size of input reports
 } hid_device_info_t;
 
+// TODO: Move to the .c file if possible
 #define MAX_HID_DEVICES 4
 
 // Global HID device array access
+// TODO: Move to the .c file if possible
 extern hid_device_info_t hid_devices[MAX_HID_DEVICES];
 
 // USB Host initialization and management
 void usb_host_init(void);
 void usb_host_task(void);
 
-// Event queue management
-void usb_host_set_input_queue(input_queue_t *queue);
-
 // HID descriptor parsing
+// TODO: Remove this if it is no longer needed.
 void parse_hid_descriptor(uint8_t dev_addr, uint8_t instance, const uint8_t *desc, uint16_t desc_len);
 
 #endif // USB_HOST_H

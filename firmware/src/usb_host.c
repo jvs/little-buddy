@@ -26,19 +26,14 @@ hid_device_info_t hid_devices[MAX_HID_DEVICES];
 #define HID_USAGE_MOUSE                 0x02
 #define HID_USAGE_POINTER               0x01
 
-// Event queue management
-static input_queue_t *input_queue = NULL;
 static uint32_t input_counter = 0;
-
-
-// Tick event timing
 static uint32_t last_tick_us = 0;
 static uint32_t tick_counter = 0;
 
 
 // Forward declarations
 void enqueue_input_event(
-    input_type_t type,
+    usb_input_type_t type,
     uint8_t device_address,
     uint8_t interface_id,
     void *event_data
@@ -68,21 +63,15 @@ void usb_host_task(void) {
         last_tick_us = current_time_us;
         tick_counter++;
 
-        tick_data_t tick_data;
+        usb_tick_data_t tick_data;
         tick_data.tick_count = tick_counter;
         tick_data.delta_us = current_time_us - last_tick_us;
-        enqueue_input_event(INPUT_TICK, 0, 0, &tick_data);
+        enqueue_input_event(USB_INPUT_TICK, 0, 0, &tick_data);
     }
 }
 
-void usb_host_set_input_queue(input_queue_t *queue) {
-    input_queue = queue;
-}
-
-void enqueue_input_event(input_type_t type, uint8_t device_address, uint8_t interface_id, void *event_data) {
-    if (!input_queue) return;
-
-    input_event_t event;
+void enqueue_input_event(usb_input_type_t type, uint8_t device_address, uint8_t interface_id, void *event_data) {
+    usb_input_event_t event;
     event.type = type;
     event.timestamp_ms = time_us_32() / 1000;  // Convert microseconds to milliseconds
     event.sequence_id = ++input_counter;
@@ -90,20 +79,20 @@ void enqueue_input_event(input_type_t type, uint8_t device_address, uint8_t inte
 
     // Copy event-specific data
     switch (type) {
-        case INPUT_MOUSE:
+        case USB_INPUT_MOUSE:
             if (event_data) {
-                event.data.mouse = *(mouse_data_t*)event_data;
+                event.data.mouse = *(usb_mouse_data_t*)event_data;
             }
             break;
-        case INPUT_KEYBOARD:
+        case USB_INPUT_KEYBOARD:
             if (event_data) {
-                event.data.keyboard = *(keyboard_data_t*)event_data;
+                event.data.keyboard = *(usb_keyboard_data_t*)event_data;
             }
             break;
-        case INPUT_DEVICE_CONNECTED:
-        case INPUT_DEVICE_DISCONNECTED:
+        case USB_INPUT_DEVICE_CONNECTED:
+        case USB_INPUT_DEVICE_DISCONNECTED:
             if (event_data) {
-                event.data.device = *(device_data_t*)event_data;
+                event.data.device = *(usb_device_data_t*)event_data;
             } else {
                 event.data.device.device_address = device_address;
                 event.data.device.instance = interface_id;
@@ -112,7 +101,7 @@ void enqueue_input_event(input_type_t type, uint8_t device_address, uint8_t inte
             break;
         case INPUT_TICK:
             if (event_data) {
-                event.data.tick = *(tick_data_t*)event_data;
+                event.data.tick = *(usb_tick_data_t*)event_data;
             }
             break;
         default:
@@ -120,7 +109,7 @@ void enqueue_input_event(input_type_t type, uint8_t device_address, uint8_t inte
     }
 
     // Try to enqueue the event
-    if (!input_queue_enqueue(input_queue, &event)) {
+    if (!usb_input_enqueue(&event)) {
         // Queue is full
     }
 }
@@ -181,7 +170,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
     device_data.device_address = dev_addr;
     device_data.instance = instance;
     device_data.device_type = "HID";
-    enqueue_input_event(INPUT_DEVICE_CONNECTED, dev_addr, instance, &device_data);
+    enqueue_input_event(USB_INPUT_DEVICE_CONNECTED, dev_addr, instance, &device_data);
 }
 
 void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
@@ -190,7 +179,7 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
     device_data.device_address = dev_addr;
     device_data.instance = instance;
     device_data.device_type = "HID";
-    enqueue_input_event(INPUT_DEVICE_DISCONNECTED, dev_addr, instance, &device_data);
+    enqueue_input_event(USB_INPUT_DEVICE_DISCONNECTED, dev_addr, instance, &device_data);
 
     // Clear device info quietly
     for (int i = 0; i < MAX_HID_DEVICES; i++) {
@@ -216,7 +205,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
                 keyboard_data_t keyboard_data;
                 keyboard_data.modifier = report[0];
                 memcpy(&keyboard_data.keycodes, report + 2, 6);
-                enqueue_input_event(INPUT_KEYBOARD, dev_addr, instance, &keyboard_data);
+                enqueue_input_event(USB_INPUT_KEYBOARD, dev_addr, instance, &keyboard_data);
             } else if (len == 6 && report[0] == 0x01) {
                 // Trackpoint mouse report: [0x01, buttons, x, y, wheel, ?]
                 mouse_data_t mouse_data;
@@ -224,7 +213,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
                 mouse_data.delta_x = (int8_t)report[2];
                 mouse_data.delta_y = (int8_t)report[3];
                 mouse_data.scroll = (int8_t)report[4];
-                enqueue_input_event(INPUT_MOUSE, dev_addr, instance, &mouse_data);
+                enqueue_input_event(USB_INPUT_MOUSE, dev_addr, instance, &mouse_data);
             }
             break;
         }

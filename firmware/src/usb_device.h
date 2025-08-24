@@ -4,13 +4,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <tusb.h>
-#include "usb_events.h"
 
 // USB Device initialization and management
 void usb_device_init(void);
 void usb_device_task(void);
 
-void usb_device_flush_output_queue(output_queue_t *queue);
+void usb_device_flush_output(void);
 
 // Interface numbers for device configuration
 enum {

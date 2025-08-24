@@ -10,12 +10,8 @@
 #include "event_processor.h"
 #include "sh1107_display.h"
 #include "usb_device.h"
-#include "usb_events.h"
-#include "usb_host.h"
-
-// Global USB event queues
-static input_queue_t input_queue;
-static output_queue_t output_queue;
+#include "usb_input.h"
+#include "usb_output.h"
 
 
 int main() {
@@ -46,16 +42,12 @@ int main() {
     }
 
     // Initialize USB event queues
-    input_queue_init(&input_queue);
-    output_queue_init(&output_queue);
-
-    // Initialize event processor
-    event_processor_init();
+    usb_input_init();
+    usb_output_init();
 
     // Initialize USB device and host
     usb_device_init();
     usb_host_init();
-    usb_host_set_input_queue(&input_queue);
 
     // Wait a bit for USB to initialize
     sleep_ms(100);
@@ -69,15 +61,10 @@ int main() {
     }
 
     while (1) {
-        // USB tasks
         usb_device_task();
         usb_host_task();
-
-        // Process input events (transform input -> output)
-        event_processor_process(&input_queue, &output_queue);
-
-        // Flush output queue (send events to computer)
-        usb_device_flush_output_queue(&output_queue);
+        event_processor_process();
+        usb_device_flush_output();
     }
 
     return 0;
