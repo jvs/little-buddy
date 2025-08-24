@@ -50,14 +50,14 @@ void event_processor_process(void) {
 }
 
 
-static void process_tick_event(const tick_data_t *tick_data) {
+static void process_tick_event(const usb_tick_data_t *tick_data) {
     (void)tick_data; // Suppress unused parameter warning for now
 }
 
-static void process_device_connected(const device_data_t *device_data) {
+static void process_device_connected(const usb_device_data_t *device_data) {
     (void)device_data; // Suppress unused parameter warning for now
 }
 
-static void process_device_disconnected(const device_data_t *device_data) {
+static void process_device_disconnected(const usb_device_data_t *device_data) {
     (void)device_data; // Suppress unused parameter warning for now
 }

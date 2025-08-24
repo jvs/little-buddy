@@ -166,7 +166,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
     tuh_hid_receive_report(dev_addr, instance);
 
     // Enqueue device connected event
-    device_data_t device_data;
+    usb_device_data_t device_data;
     device_data.device_address = dev_addr;
     device_data.instance = instance;
     device_data.device_type = "HID";
@@ -175,7 +175,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
 
 void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
     // Enqueue device disconnected event before clearing device info
-    device_data_t device_data;
+    usb_device_data_t device_data;
     device_data.device_address = dev_addr;
     device_data.instance = instance;
     device_data.device_type = "HID";
