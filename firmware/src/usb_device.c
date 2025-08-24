@@ -4,9 +4,6 @@
 #include <string.h>
 #include <stdio.h>
 
-// Non-blocking keyboard test state (shared with main)
-extern uint32_t keyboard_test_deadline;
-extern bool keyboard_test_pending;
 
 void usb_device_init(void) {
     // Initialize TinyUSB device stack
@@ -18,117 +15,6 @@ void usb_device_task(void) {
     tud_task();
 }
 
-//--------------------------------------------------------------------+
-// CDC TASK
-//--------------------------------------------------------------------+
-
-uint32_t cdc_task(void) {
-    uint32_t bytes_received = 0;
-    if (tud_cdc_available()) {
-        uint8_t buf[64];
-        uint32_t count = tud_cdc_read(buf, sizeof(buf));
-
-        // Process commands
-        for (uint32_t i = 0; i < count; i++) {
-            char c = buf[i];
-            switch (c) {
-                case 'l':
-                    // Move mouse left
-                    for (int j = 0; j < 10; j++) {
-                        send_mouse_report(-5, 0, 0);
-                        sleep_ms(20);
-                    }
-                    tud_cdc_write_str("MOUSE LEFT\r\n");
-                    break;
-                case 'r':
-                    // Move mouse right
-                    for (int j = 0; j < 10; j++) {
-                        send_mouse_report(5, 0, 0);
-                        sleep_ms(20);
-                    }
-                    tud_cdc_write_str("MOUSE RIGHT\r\n");
-                    break;
-                case 'u':
-                    // Move mouse up
-                    for (int j = 0; j < 10; j++) {
-                        send_mouse_report(0, -5, 0);
-                        sleep_ms(20);
-                    }
-                    tud_cdc_write_str("MOUSE UP\r\n");
-                    break;
-                case 'd':
-                    // Move mouse down
-                    for (int j = 0; j < 10; j++) {
-                        send_mouse_report(0, 5, 0);
-                        sleep_ms(20);
-                    }
-                    tud_cdc_write_str("MOUSE DOWN\r\n");
-                    break;
-                case 'a':
-                    // Schedule 'b' key to be sent in 3 seconds
-                    keyboard_test_deadline = time_us_32() + 3000000; // 3 seconds in microseconds
-                    keyboard_test_pending = true;
-                    tud_cdc_write_str("WILL SEND 'B' IN 3 SECONDS...\r\n");
-                    break;
-                case 'c':
-                    // Emergency: clear all keys
-                    send_keyboard_report(0, 0);  // Release everything
-                    sleep_ms(10);
-                    send_keyboard_report(0, 0);  // Send again to be sure
-                    tud_cdc_write_str("CLEARED ALL KEYS\r\n");
-                    break;
-                case 'D':
-                    // Toggle debug raw reports
-                    {
-                        static bool debug_state = false;
-                        debug_state = !debug_state;
-                        usb_host_set_debug_raw_reports(debug_state);
-                        if (debug_state) {
-                            tud_cdc_write_str("DEBUG: Raw report dumping ON\r\n");
-                        } else {
-                            tud_cdc_write_str("DEBUG: Raw report dumping OFF\r\n");
-                        }
-                    }
-                    break;
-                case 'S':
-                    // Show descriptor
-                    for (int i = 0; i < MAX_HID_DEVICES; i++) {
-                        if (hid_devices[i].is_connected) {
-                            char msg[64];
-                            snprintf(msg, sizeof(msg), "DEVICE %d: addr=%d inst=%d len=%d\r\n",
-                                    i, hid_devices[i].dev_addr, hid_devices[i].instance, hid_devices[i].report_desc_len);
-                            tud_cdc_write_str(msg);
-                        }
-                    }
-                    break;
-                case 'H':
-                    // Help
-                    tud_cdc_write_str("COMMANDS:\r\n");
-                    tud_cdc_write_str("  l/r/u/d - test mouse movement\r\n");
-                    tud_cdc_write_str("  a - test keyboard (sends 'b')\r\n");
-                    tud_cdc_write_str("  c - clear stuck keys\r\n");
-                    tud_cdc_write_str("  D - toggle raw HID report debugging\r\n");
-                    tud_cdc_write_str("  S - show connected devices\r\n");
-                    tud_cdc_write_str("  H - show this help\r\n");
-                    break;
-                default:
-                    // Send back normal response with the actual character
-                    char response[32];
-                    if (c >= 32 && c <= 126) {
-                        snprintf(response, sizeof(response), "GOT '%c' (0x%02X)\r\n", c, c);
-                    } else {
-                        snprintf(response, sizeof(response), "GOT 0x%02X\r\n", c);
-                    }
-                    tud_cdc_write_str(response);
-                    break;
-            }
-        }
-        tud_cdc_write_flush();
-
-        bytes_received = count;
-    }
-    return bytes_received;
-}
 
 //--------------------------------------------------------------------+
 // HID DEVICE HELPER FUNCTIONS

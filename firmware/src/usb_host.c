@@ -33,9 +33,6 @@ static uint32_t* sequence_counter = NULL;
 // Debug control
 static bool debug_raw_reports = false;
 
-// Global variables for display updates (shared with main)
-extern char last_event[32];
-extern uint8_t last_key;
 
 // Forward declarations
 void enqueue_usb_event(usb_event_type_t type, uint8_t device_address, uint8_t interface_id, void* event_data);
@@ -233,10 +230,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
                 uint8_t modifier = report[0];
                 uint8_t key = report[2]; // First key
 
-                if (key != 0 && key != last_key) {
-                    last_key = key;
-                    snprintf(last_event, sizeof(last_event), "K: %02X", key);
-
+                if (key != 0) {
                     // Enqueue keyboard event
                     usb_keyboard_data_t kbd_data;
                     kbd_data.keycode = key;
@@ -252,8 +246,6 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
                 int8_t wheel = (int8_t)report[4];
 
                 if (buttons != 0 || delta_x != 0 || delta_y != 0 || wheel != 0) {
-                    snprintf(last_event, sizeof(last_event), "M: B=%d X=%d Y=%d W=%d", buttons, delta_x, delta_y, wheel);
-
                     // Enqueue mouse event
                     usb_mouse_data_t mouse_data;
                     mouse_data.delta_x = delta_x;
