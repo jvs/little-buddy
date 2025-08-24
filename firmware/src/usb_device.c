@@ -153,6 +153,44 @@ void send_mouse_report(int8_t delta_x, int8_t delta_y, uint8_t buttons) {
 }
 
 //--------------------------------------------------------------------+
+// OUTPUT QUEUE PROCESSING
+//--------------------------------------------------------------------+
+
+void usb_device_process_output_queue(usb_output_queue_t* queue) {
+    usb_output_event_t event;
+    
+    // Process all events in the queue
+    while (usb_output_queue_dequeue(queue, &event)) {
+        switch (event.type) {
+            case USB_OUTPUT_MOUSE:
+                send_mouse_report(
+                    event.data.mouse.delta_x,
+                    event.data.mouse.delta_y,
+                    event.data.mouse.buttons
+                );
+                break;
+                
+            case USB_OUTPUT_KEYBOARD:
+                // For keyboard, we need to handle press/release differently
+                if (event.data.keyboard.pressed) {
+                    send_keyboard_report(
+                        event.data.keyboard.modifier,
+                        event.data.keyboard.keycode
+                    );
+                } else {
+                    // Key release - send with no keycode
+                    send_keyboard_report(0, 0);
+                }
+                break;
+                
+            default:
+                // Unknown event type, skip
+                break;
+        }
+    }
+}
+
+//--------------------------------------------------------------------+
 // USB DEVICE DESCRIPTORS
 //--------------------------------------------------------------------+
 

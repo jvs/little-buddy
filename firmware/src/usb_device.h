@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <tusb.h>
+#include "usb_events.h"
 
 // USB Device initialization and management
 void usb_device_init(void);
@@ -15,6 +16,9 @@ void send_mouse_report(int8_t delta_x, int8_t delta_y, uint8_t buttons);
 
 // CDC task for handling serial communication
 uint32_t cdc_task(void);
+
+// Output queue processing
+void usb_device_process_output_queue(usb_output_queue_t* queue);
 
 // Interface numbers for device configuration
 enum {

@@ -67,6 +67,13 @@ void usb_host_set_debug_raw_reports(bool enable) {
     debug_raw_reports = enable;
 }
 
+void usb_host_enqueue_tick_event(uint32_t tick_count, uint32_t delta_us) {
+    usb_tick_data_t tick_data;
+    tick_data.tick_count = tick_count;
+    tick_data.delta_us = delta_us;
+    enqueue_usb_event(USB_EVENT_TICK, 0, 0, &tick_data);
+}
+
 void enqueue_usb_event(usb_event_type_t type, uint8_t device_address, uint8_t interface_id, void* event_data) {
     if (!event_queue || !sequence_counter) return;
 
@@ -96,6 +103,11 @@ void enqueue_usb_event(usb_event_type_t type, uint8_t device_address, uint8_t in
                 event.data.device.device_address = device_address;
                 event.data.device.instance = interface_id;
                 event.data.device.device_type = "HID";
+            }
+            break;
+        case USB_EVENT_TICK:
+            if (event_data) {
+                event.data.tick = *(usb_tick_data_t*)event_data;
             }
             break;
         default:

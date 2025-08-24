@@ -81,9 +81,9 @@ static bool sh1107_write_data(sh1107_t *display, const uint8_t *data, size_t len
 bool sh1107_init(sh1107_t *display, i2c_inst_t *i2c) {
     display->i2c = i2c;
     display->initialized = false;
-    
+
     sh1107_clear(display);
-    
+
     const uint8_t init_sequence[] = {
         SH1107_DISPLAYOFF,
         SH1107_SETDISPLAYCLOCKDIV, 0x51,
@@ -101,13 +101,13 @@ bool sh1107_init(sh1107_t *display, i2c_inst_t *i2c) {
         SH1107_NORMALDISPLAY,
         SH1107_DISPLAYON
     };
-    
+
     for (size_t i = 0; i < sizeof(init_sequence); i++) {
         if (!sh1107_write_command(display, init_sequence[i])) {
             return false;
         }
     }
-    
+
     display->initialized = true;
     return true;
 }
@@ -118,23 +118,23 @@ void sh1107_clear(sh1107_t *display) {
 
 void sh1107_display(sh1107_t *display) {
     if (!display->initialized) return;
-    
+
     for (uint8_t page = 0; page < SH1107_PAGES; page++) {
         sh1107_write_command(display, 0xB0 + page);
         sh1107_write_command(display, SH1107_SETLOWCOLUMN);
         sh1107_write_command(display, SH1107_SETHIGHCOLUMN);
-        
+
         sh1107_write_data(display, &display->buffer[page * SH1107_WIDTH], SH1107_WIDTH);
     }
 }
 
 void sh1107_set_pixel(sh1107_t *display, int16_t x, int16_t y, bool on) {
     if (x < 0 || x >= SH1107_WIDTH || y < 0 || y >= SH1107_HEIGHT) return;
-    
+
     uint16_t page = y / 8;
     uint8_t bit = y % 8;
     uint16_t index = page * SH1107_WIDTH + x;
-    
+
     if (on) {
         display->buffer[index] |= (1 << bit);
     } else {
@@ -144,9 +144,9 @@ void sh1107_set_pixel(sh1107_t *display, int16_t x, int16_t y, bool on) {
 
 void sh1107_draw_char(sh1107_t *display, int16_t x, int16_t y, char c) {
     if (c < 32 || c > 90) c = 32;
-    
+
     const uint8_t *font_data = font5x7[c - 32];
-    
+
     for (int col = 0; col < 5; col++) {
         uint8_t line = font_data[col];
         for (int row = 0; row < 8; row++) {
@@ -159,7 +159,7 @@ void sh1107_draw_char(sh1107_t *display, int16_t x, int16_t y, char c) {
 
 void sh1107_draw_string(sh1107_t *display, int16_t x, int16_t y, const char *str) {
     int16_t cursor_x = x;
-    
+
     while (*str) {
         sh1107_draw_char(display, cursor_x, y, *str);
         cursor_x += 6;
@@ -169,7 +169,26 @@ void sh1107_draw_string(sh1107_t *display, int16_t x, int16_t y, const char *str
 
 void sh1107_set_contrast(sh1107_t *display, uint8_t contrast) {
     if (!display->initialized) return;
-    
+
     sh1107_write_command(display, SH1107_SETCONTRAST);
     sh1107_write_command(display, contrast);
 }
+
+
+void sh1107_draw_icon(sh1107_t* display, const display_icon_t* icon) {
+    sh1107_draw_icon_fast(display, icon->data);
+}
+
+void sh1107_draw_icon_fast(sh1107_t* display, const uint8_t* icon_data) {
+    // Copy icon data directly to framebuffer (fastest)
+    memcpy(display->framebuffer, icon_data, 1024);
+    sh1107_display(display);
+
+    // OR send page by page to display (if you want to avoid framebuffer)
+    for (int page = 0; page < 8; page++) {
+        sh1107_set_page_address(display, page);
+        sh1107_set_column_address(display, 0);
+        sh1107_write_data(display, &icon_data[page * 128], 128);
+    }
+}
+
