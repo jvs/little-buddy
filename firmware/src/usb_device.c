@@ -115,9 +115,8 @@ uint8_t const desc_hid_report_mouse[] = {
 // Configuration Descriptor
 uint8_t const desc_configuration[] = {
     TUD_CONFIG_DESCRIPTOR(1, ITF_NUM_TOTAL, 0, CONFIG_TOTAL_LEN, 0x00, 100),
-    TUD_CDC_DESCRIPTOR(ITF_NUM_CDC, 4, EPNUM_CDC_NOTIF, 8, EPNUM_CDC_OUT, EPNUM_CDC_IN, 64),
-    TUD_HID_DESCRIPTOR(ITF_NUM_HID_KEYBOARD, 5, HID_ITF_PROTOCOL_KEYBOARD, sizeof(desc_hid_report_keyboard), EPNUM_HID_KEYBOARD, CFG_TUD_HID_EP_BUFSIZE, 5),
-    TUD_HID_DESCRIPTOR(ITF_NUM_HID_MOUSE, 6, HID_ITF_PROTOCOL_MOUSE, sizeof(desc_hid_report_mouse), EPNUM_HID_MOUSE, CFG_TUD_HID_EP_BUFSIZE, 5),
+    TUD_HID_DESCRIPTOR(ITF_NUM_HID_KEYBOARD, 4, HID_ITF_PROTOCOL_KEYBOARD, sizeof(desc_hid_report_keyboard), EPNUM_HID_KEYBOARD, CFG_TUD_HID_EP_BUFSIZE, 5),
+    TUD_HID_DESCRIPTOR(ITF_NUM_HID_MOUSE, 5, HID_ITF_PROTOCOL_MOUSE, sizeof(desc_hid_report_mouse), EPNUM_HID_MOUSE, CFG_TUD_HID_EP_BUFSIZE, 5),
 };
 
 uint8_t const * tud_descriptor_configuration_cb(uint8_t index) {
@@ -140,9 +139,8 @@ char const* string_desc_arr [] = {
     "Generic",                     // 1: Manufacturer
     "USB Keyboard",                // 2: Product
     "123456",                      // 3: Serials
-    "CDC Interface",               // 4: CDC Interface
-    "HID Keyboard",                // 5: HID Keyboard Interface
-    "HID Mouse",                   // 6: HID Mouse Interface
+    "HID Keyboard",                // 4: HID Keyboard Interface
+    "HID Mouse",                   // 5: HID Mouse Interface
 };
 
 static uint16_t _desc_str[32];

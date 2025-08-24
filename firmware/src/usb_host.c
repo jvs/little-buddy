@@ -30,8 +30,6 @@ hid_device_info_t hid_devices[MAX_HID_DEVICES];
 static usb_event_queue_t* event_queue = NULL;
 static uint32_t* sequence_counter = NULL;
 
-// Debug control
-static bool debug_raw_reports = false;
 
 // Keyboard state tracking for press/release detection
 static uint8_t prev_keyboard_report[MAX_HID_DEVICES][8] = {0};
@@ -61,10 +59,6 @@ void usb_host_task(void) {
 void usb_host_set_event_queue(usb_event_queue_t* queue, uint32_t* seq_counter) {
     event_queue = queue;
     sequence_counter = seq_counter;
-}
-
-void usb_host_set_debug_raw_reports(bool enable) {
-    debug_raw_reports = enable;
 }
 
 void usb_host_enqueue_tick_event(uint32_t tick_count, uint32_t delta_us) {
@@ -116,9 +110,7 @@ void enqueue_usb_event(usb_event_type_t type, uint8_t device_address, uint8_t in
 
     // Try to enqueue the event
     if (!usb_event_queue_enqueue(event_queue, &event)) {
-        // Queue is full - could log this if needed
-        tud_cdc_write_str("WARNING: USB event queue full\r\n");
-        tud_cdc_write_flush();
+        // Queue is full
     }
 }
 
@@ -127,17 +119,11 @@ void enqueue_usb_event(usb_event_type_t type, uint8_t device_address, uint8_t in
 //--------------------------------------------------------------------+
 
 void tuh_mount_cb(uint8_t dev_addr) {
-    char msg[64];
-    snprintf(msg, sizeof(msg), "HOST: Device attached, addr=%d\r\n", dev_addr);
-    tud_cdc_write_str(msg);
-    tud_cdc_write_flush();
+    // Device attached
 }
 
 void tuh_umount_cb(uint8_t dev_addr) {
-    char msg[64];
-    snprintf(msg, sizeof(msg), "HOST: Device removed, addr=%d\r\n", dev_addr);
-    tud_cdc_write_str(msg);
-    tud_cdc_write_flush();
+    // Device removed
 }
 
 void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_report, uint16_t desc_len) {
@@ -207,20 +193,6 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
 }
 
 void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len) {
-    // Debug: dump raw reports if enabled
-    if (debug_raw_reports) {
-        char debug_msg[128];
-        int offset = snprintf(debug_msg, sizeof(debug_msg), "RAW [%d,%d] len=%d: ", dev_addr, instance, len);
-
-        for (uint16_t i = 0; i < len && offset < sizeof(debug_msg) - 4; i++) {
-            offset += snprintf(debug_msg + offset, sizeof(debug_msg) - offset, "%02X ", report[i]);
-        }
-        offset += snprintf(debug_msg + offset, sizeof(debug_msg) - offset, "\r\n");
-
-        tud_cdc_write_str(debug_msg);
-        tud_cdc_write_flush();
-    }
-
     // Find the device info
     for (int i = 0; i < MAX_HID_DEVICES; i++) {
         if (hid_devices[i].is_connected &&
@@ -311,10 +283,6 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
 //--------------------------------------------------------------------+
 
 void parse_hid_descriptor(uint8_t dev_addr, uint8_t instance, const uint8_t* desc, uint16_t desc_len) {
-    char debug_msg[64];
-    snprintf(debug_msg, sizeof(debug_msg), "HOST: parse_hid_descriptor called len=%d\r\n", desc_len);
-    tud_cdc_write_str(debug_msg);
-    tud_cdc_write_flush();
 
     // Find the device slot
     int device_slot = -1;
@@ -328,8 +296,6 @@ void parse_hid_descriptor(uint8_t dev_addr, uint8_t instance, const uint8_t* des
     }
 
     if (device_slot == -1) return;
-
-    tud_cdc_write_str("HOST: Parsing HID descriptor...\r\n");
 
     uint16_t pos = 0;
     uint8_t current_usage_page = 0;
@@ -367,14 +333,11 @@ void parse_hid_descriptor(uint8_t dev_addr, uint8_t instance, const uint8_t* des
                 if (current_usage_page == HID_USAGE_PAGE_GENERIC_DESKTOP) {
                     if (current_usage == HID_USAGE_KEYBOARD) {
                         hid_devices[device_slot].has_keyboard = true;
-                        tud_cdc_write_str("HOST: Found KEYBOARD usage\r\n");
                     } else if (current_usage == HID_USAGE_MOUSE || current_usage == HID_USAGE_POINTER) {
                         hid_devices[device_slot].has_mouse = true;
-                        tud_cdc_write_str("HOST: Found MOUSE usage\r\n");
                     }
                 } else if (current_usage_page == HID_USAGE_PAGE_KEYBOARD) {
                     hid_devices[device_slot].has_keyboard = true;
-                    tud_cdc_write_str("HOST: Found KEYBOARD usage page\r\n");
                 }
                 break;
 
@@ -398,11 +361,5 @@ void parse_hid_descriptor(uint8_t dev_addr, uint8_t instance, const uint8_t* des
         }
     }
 
-    char msg[128];
-    snprintf(msg, sizeof(msg), "HOST: Descriptor parsed - kbd=%d mouse=%d report_size=%d\r\n",
-             hid_devices[device_slot].has_keyboard,
-             hid_devices[device_slot].has_mouse,
-             hid_devices[device_slot].input_report_size);
-    tud_cdc_write_str(msg);
-    tud_cdc_write_flush();
+    // Descriptor parsed
 }
