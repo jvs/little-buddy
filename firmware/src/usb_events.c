@@ -51,11 +51,11 @@ bool usb_output_queue_enqueue(usb_output_queue_t* queue, const usb_output_event_
     if (queue->count >= USB_OUTPUT_QUEUE_SIZE) {
         return false;  // Queue full
     }
-    
+
     queue->events[queue->tail] = *event;
     queue->tail = (queue->tail + 1) % USB_OUTPUT_QUEUE_SIZE;
     queue->count++;
-    
+
     return true;
 }
 
@@ -63,11 +63,11 @@ bool usb_output_queue_dequeue(usb_output_queue_t* queue, usb_output_event_t* eve
     if (queue->count == 0) {
         return false;  // Queue empty
     }
-    
+
     *event = queue->events[queue->head];
     queue->head = (queue->head + 1) % USB_OUTPUT_QUEUE_SIZE;
     queue->count--;
-    
+
     return true;
 }
 
@@ -79,23 +79,18 @@ uint32_t usb_output_queue_count(const usb_output_queue_t* queue) {
     return queue->count;
 }
 
-bool usb_output_enqueue_mouse(usb_output_queue_t* queue, int8_t delta_x, int8_t delta_y, uint8_t buttons, int8_t scroll) {
-    usb_output_event_t event;
-    event.type = USB_OUTPUT_MOUSE;
-    event.data.mouse.delta_x = delta_x;
-    event.data.mouse.delta_y = delta_y;
-    event.data.mouse.buttons = buttons;
-    event.data.mouse.scroll = scroll;
-    
-    return usb_output_queue_enqueue(queue, &event);
-}
+// bool usb_output_enqueue_mouse(usb_output_queue_t* queue, usb_mouse_data_t mouse) {
+//     usb_output_event_t event;
+//     event.type = USB_OUTPUT_MOUSE;
+//     event.data.mouse = mouse;
+//
+//     return usb_output_queue_enqueue(queue, &event);
+// }
 
-bool usb_output_enqueue_keyboard(usb_output_queue_t* queue, uint8_t keycode, uint8_t modifier, bool pressed) {
-    usb_output_event_t event;
-    event.type = USB_OUTPUT_KEYBOARD;
-    event.data.keyboard.keycode = keycode;
-    event.data.keyboard.modifier = modifier;
-    event.data.keyboard.pressed = pressed;
-    
-    return usb_output_queue_enqueue(queue, &event);
-}
+// bool usb_output_enqueue_keyboard(usb_output_queue_t* queue, usb_keyboard_data_t keyboard) {
+//     usb_output_event_t event;
+//     event.type = USB_OUTPUT_KEYBOARD;
+//     event.data.keyboard = keyboard;
+//
+//     return usb_output_queue_enqueue(queue, &event);
+// }

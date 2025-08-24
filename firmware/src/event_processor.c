@@ -31,46 +31,43 @@ void event_processor_reset(void) {
 
 void event_processor_process(usb_event_queue_t* input_queue, usb_output_queue_t* output_queue) {
     usb_event_t input_event;
-    
+
     // Process all events in the input queue
     while (usb_event_queue_dequeue(input_queue, &input_event)) {
         switch (input_event.type) {
             case USB_EVENT_MOUSE:
                 // Pass mouse events through unchanged (for now)
-                usb_output_enqueue_mouse(
-                    output_queue,
-                    input_event.data.mouse.delta_x,
-                    input_event.data.mouse.delta_y,
-                    input_event.data.mouse.buttons,
-                    input_event.data.mouse.scroll
-                );
+                usb_output_event_t output_event;
+                output_event.type = USB_OUTPUT_MOUSE;
+                output_event.data.mouse = input_event.data.mouse;
+
+                (void) usb_output_queue_enqueue(queue, &output_event);
                 break;
-                
+
             case USB_EVENT_KEYBOARD:
                 // Pass keyboard events through unchanged (for now)
-                usb_output_enqueue_keyboard(
-                    output_queue,
-                    input_event.data.keyboard.keycode,
-                    input_event.data.keyboard.modifier,
-                    input_event.data.keyboard.pressed
-                );
+                usb_output_event_t output_event;
+                output_event.type = USB_OUTPUT_KEYBOARD;
+                output_event.data.keyboard = input_event.data.keyboard;
+
+                (void) usb_output_queue_enqueue(queue, &output_event);
                 break;
-                
+
             case USB_EVENT_TICK:
                 // Process tick events (currently ignored)
                 process_tick_event(&input_event.data.tick);
                 break;
-                
+
             case USB_EVENT_DEVICE_CONNECTED:
                 // Handle device connection
                 process_device_connected(&input_event.data.device);
                 break;
-                
+
             case USB_EVENT_DEVICE_DISCONNECTED:
                 // Handle device disconnection
                 process_device_disconnected(&input_event.data.device);
                 break;
-                
+
             default:
                 // Unknown event type, ignore
                 break;
@@ -95,7 +92,7 @@ static void process_device_connected(const usb_device_data_t* device_data) {
 }
 
 static void process_device_disconnected(const usb_device_data_t* device_data) {
-    // Handle device disconnection  
+    // Handle device disconnection
     // Examples: cleanup device state, reset mappings
     (void)device_data; // Suppress unused parameter warning for now
 }

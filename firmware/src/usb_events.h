@@ -21,9 +21,8 @@ typedef struct {
 } usb_mouse_data_t;
 
 typedef struct {
-    uint8_t keycode;
     uint8_t modifier;
-    bool pressed;
+    uint8_t keycodes[6];
 } usb_keyboard_data_t;
 
 typedef struct {
@@ -103,7 +102,7 @@ bool usb_output_queue_is_empty(const usb_output_queue_t* queue);
 uint32_t usb_output_queue_count(const usb_output_queue_t* queue);
 
 // Helper functions for enqueuing output events
-bool usb_output_enqueue_mouse(usb_output_queue_t* queue, int8_t delta_x, int8_t delta_y, uint8_t buttons, int8_t scroll);
-bool usb_output_enqueue_keyboard(usb_output_queue_t* queue, uint8_t keycode, uint8_t modifier, bool pressed);
+// bool usb_output_enqueue_mouse(usb_output_queue_t* queue, int8_t delta_x, int8_t delta_y, uint8_t buttons, int8_t scroll);
+// bool usb_output_enqueue_keyboard(usb_output_queue_t* queue, uint8_t keycode, uint8_t modifier, bool pressed);
 
 #endif

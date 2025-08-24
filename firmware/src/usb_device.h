@@ -10,10 +10,6 @@
 void usb_device_init(void);
 void usb_device_task(void);
 
-// HID device helper functions
-void send_keyboard_report(uint8_t modifier, uint8_t keycode);
-void send_mouse_report(int8_t delta_x, int8_t delta_y, uint8_t buttons);
-
 // Output queue processing
 void usb_device_process_output_queue(usb_output_queue_t* queue);
 
