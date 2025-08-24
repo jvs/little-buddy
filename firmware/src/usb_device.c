@@ -24,11 +24,14 @@ enum {
 #define EPNUM_HID_MOUSE   0x82
 
 
+static void flush_output_events(void);
+
 void usb_device_init(void) {
     tud_init(BOARD_TUD_RHPORT);
 }
 
 void usb_device_task(void) {
+    flush_output_events();
     tud_task();
 }
 
@@ -55,7 +58,7 @@ void send_mouse_report(int8_t delta_x, int8_t delta_y, uint8_t buttons) {
 // OUTPUT QUEUE PROCESSING
 //--------------------------------------------------------------------+
 
-void usb_device_flush_output(void) {
+static void flush_output_events(void) {
     usb_output_event_t event;
 
     // Process all events in the queue

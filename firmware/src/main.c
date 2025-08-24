@@ -65,7 +65,6 @@ int main() {
         usb_device_task();
         usb_host_task();
         event_processor_process();
-        usb_device_flush_output();
     }
 
     return 0;
