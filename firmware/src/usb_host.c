@@ -113,7 +113,7 @@ void enqueue_input_event(input_type_t type, uint8_t device_address, uint8_t inte
             break;
         case INPUT_TICK:
             if (event_data) {
-                event.data.tick = *(usb_tick_data_t*)event_data;
+                event.data.tick = *(tick_data_t*)event_data;
             }
             break;
         default:
@@ -121,7 +121,7 @@ void enqueue_input_event(input_type_t type, uint8_t device_address, uint8_t inte
     }
 
     // Try to enqueue the event
-    if (!input_queue_enqueue(event_queue, &event)) {
+    if (!input_queue_enqueue(input_queue, &event)) {
         // Queue is full
     }
 }
@@ -178,7 +178,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
     tuh_hid_receive_report(dev_addr, instance);
 
     // Enqueue device connected event
-    usb_device_data_t device_data;
+    device_data_t device_data;
     device_data.device_address = dev_addr;
     device_data.instance = instance;
     device_data.device_type = "HID";
@@ -187,7 +187,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
 
 void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
     // Enqueue device disconnected event before clearing device info
-    usb_device_data_t device_data;
+    device_data_t device_data;
     device_data.device_address = dev_addr;
     device_data.instance = instance;
     device_data.device_type = "HID";
