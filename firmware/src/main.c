@@ -68,20 +68,7 @@ int main() {
         sh1107_display(&display);
     }
 
-    // Tick event timing
-    static uint32_t last_tick_us = 0;
-    static uint32_t tick_counter = 0;
-
     while (1) {
-        // Check for 1ms tick events
-        uint32_t current_time_us = time_us_32();
-        if (current_time_us - last_tick_us >= 1000) { // 1000 microseconds = 1ms
-            uint32_t delta_us = current_time_us - last_tick_us;
-            last_tick_us = current_time_us;
-            tick_counter++;
-            usb_host_enqueue_tick_event(tick_counter, delta_us);
-        }
-
         // USB tasks
         usb_device_task();
         usb_host_task();

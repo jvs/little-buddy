@@ -33,6 +33,10 @@ static uint32_t* sequence_counter = NULL;
 
 // Keyboard state tracking for press/release detection
 static uint8_t prev_keyboard_report[MAX_HID_DEVICES][8] = {0};
+//
+// Tick event timing
+static uint32_t last_tick_us = 0;
+static uint32_t tick_counter = 0;
 
 
 // Forward declarations
@@ -54,18 +58,24 @@ void usb_host_init(void) {
 void usb_host_task(void) {
     // TinyUSB host task
     tuh_task();
+
+    // Check for 1ms tick events
+    uint32_t current_time_us = time_us_32();
+
+    if (current_time_us - last_tick_us >= 1000) { // 1000 microseconds = 1ms
+        last_tick_us = current_time_us;
+        tick_counter++;
+
+        usb_tick_data_t tick_data;
+        tick_data.tick_count = tick_counter;
+        tick_data.delta_us = current_time_us - last_tick_us;
+        enqueue_usb_event(USB_EVENT_TICK, 0, 0, &tick_data);
+    }
 }
 
 void usb_host_set_event_queue(usb_event_queue_t* queue, uint32_t* seq_counter) {
     event_queue = queue;
     sequence_counter = seq_counter;
-}
-
-void usb_host_enqueue_tick_event(uint32_t tick_count, uint32_t delta_us) {
-    usb_tick_data_t tick_data;
-    tick_data.tick_count = tick_count;
-    tick_data.delta_us = delta_us;
-    enqueue_usb_event(USB_EVENT_TICK, 0, 0, &tick_data);
 }
 
 void enqueue_usb_event(usb_event_type_t type, uint8_t device_address, uint8_t interface_id, void* event_data) {
