@@ -102,7 +102,7 @@ void enqueue_input_event(usb_input_type_t type, uint8_t device_address, uint8_t 
                 event.data.device.device_type = "HID";
             }
             break;
-        case INPUT_TICK:
+        case USB_INPUT_TICK:
             if (event_data) {
                 event.data.tick = *(usb_tick_data_t*)event_data;
             }

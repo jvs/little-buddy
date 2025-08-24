@@ -1,4 +1,6 @@
 #include "usb_event_types.h"
+
+#include <string.h>
 #include "usb_input.h"
 
 #define USB_INPUT_QUEUE_SIZE 32
@@ -17,29 +19,29 @@ void usb_input_init(void) {
 }
 
 bool usb_input_enqueue(const usb_input_event_t *event) {
-    if (queue->count >= USB_INPUT_QUEUE_SIZE) {
+    if (queue.count >= USB_INPUT_QUEUE_SIZE) {
         return false;
     }
 
-    queue->events[queue->tail] = *event;
-    queue->tail = (queue->tail + 1) % USB_INPUT_QUEUE_SIZE;
-    queue->count++;
+    queue.events[queue.tail] = *event;
+    queue.tail = (queue.tail + 1) % USB_INPUT_QUEUE_SIZE;
+    queue.count++;
 
     return true;
 }
 
 bool usb_input_dequeue(usb_input_event_t *event) {
-    if (queue->count == 0) {
+    if (queue.count == 0) {
         return false;
     }
 
-    *event = queue->events[queue->head];
-    queue->head = (queue->head + 1) % USB_INPUT_QUEUE_SIZE;
-    queue->count--;
+    *event = queue.events[queue.head];
+    queue.head = (queue.head + 1) % USB_INPUT_QUEUE_SIZE;
+    queue.count--;
 
     return true;
 }
 
 uint32_t usb_input_count(void) {
-    return queue->count;
+    return queue.count;
 }
