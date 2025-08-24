@@ -173,22 +173,3 @@ void sh1107_set_contrast(sh1107_t *display, uint8_t contrast) {
     sh1107_write_command(display, SH1107_SETCONTRAST);
     sh1107_write_command(display, contrast);
 }
-
-
-void sh1107_draw_icon(sh1107_t* display, const display_icon_t* icon) {
-    sh1107_draw_icon_fast(display, icon->data);
-}
-
-void sh1107_draw_icon_fast(sh1107_t* display, const uint8_t* icon_data) {
-    // Copy icon data directly to framebuffer (fastest)
-    memcpy(display->framebuffer, icon_data, 1024);
-    sh1107_display(display);
-
-    // OR send page by page to display (if you want to avoid framebuffer)
-    for (int page = 0; page < 8; page++) {
-        sh1107_set_page_address(display, page);
-        sh1107_set_column_address(display, 0);
-        sh1107_write_data(display, &icon_data[page * 128], 128);
-    }
-}
-

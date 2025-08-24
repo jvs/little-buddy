@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "hardware/i2c.h"
-#include "display_icons.h"
 
 #define SH1107_I2C_ADDRESS 0x3D
 #define SH1107_WIDTH 128
@@ -52,8 +51,5 @@ void sh1107_set_pixel(sh1107_t *display, int16_t x, int16_t y, bool on);
 void sh1107_draw_char(sh1107_t *display, int16_t x, int16_t y, char c);
 void sh1107_draw_string(sh1107_t *display, int16_t x, int16_t y, const char *str);
 void sh1107_set_contrast(sh1107_t *display, uint8_t contrast);
-
-void sh1107_draw_icon(sh1107_t* display, const display_icon_t* icon);
-void sh1107_draw_icon_fast(sh1107_t* display, const uint8_t* icon_data);
 
 #endif
