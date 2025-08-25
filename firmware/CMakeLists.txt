@@ -21,7 +21,7 @@ check_and_add_pico_pio_usb_support()
 add_compile_options(-Wall)
 
 
-file(GLOB RECURSE SOURCES "src/*.c")
+file(GLOB_RECURSE SOURCES "src/*.c")
 
 add_executable(little_buddy ${SOURCES})
 
