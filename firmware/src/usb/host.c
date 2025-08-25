@@ -1,4 +1,4 @@
-#include "usb_host.h"
+#include "usb/usb.h"
 
 #include <pico/stdlib.h>
 #include <pio_usb.h>
@@ -8,8 +8,6 @@
 #include <string.h>
 #include <tusb.h>
 
-#include "usb_event_types.h"
-#include "usb_input.h"
 
 // HID device tracking
 typedef struct {

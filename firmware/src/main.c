@@ -7,12 +7,9 @@
 #include <pio_usb.h>
 
 #include "display_icons.h"
-#include "event_processor.h"
 #include "sh1107_display.h"
-#include "usb_device.h"
-#include "usb_host.h"
-#include "usb_input.h"
-#include "usb_output.h"
+#include "engine/engine.h"
+#include "usb/usb.h"
 
 
 int main() {
@@ -42,13 +39,8 @@ int main() {
         sleep_ms(500);
     }
 
-    // Initialize USB event queues
-    usb_input_init();
-    usb_output_init();
-
-    // Initialize USB device and host
-    usb_device_init();
-    usb_host_init();
+    usb_init();
+    engine_init();
 
     // Wait a bit for USB to initialize
     sleep_ms(100);
@@ -62,9 +54,8 @@ int main() {
     }
 
     while (1) {
-        usb_device_task();
-        usb_host_task();
-        event_processor_process();
+        usb_task();
+        engine_task();
     }
 
     return 0;

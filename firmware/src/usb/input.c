@@ -1,7 +1,7 @@
-#include "usb_event_types.h"
+#include "usb/usb.h"
 
 #include <string.h>
-#include "usb_input.h"
+
 
 #define USB_INPUT_QUEUE_SIZE 32
 

@@ -1,4 +1,4 @@
-#include "usb_device.h"
+#include "usb/usb.h"
 
 #include <pico/stdlib.h>
 #include <stdbool.h>
@@ -6,9 +6,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <tusb.h>
-
-#include "usb_event_types.h"
-#include "usb_output.h"
 
 
 // Interface numbers for device configuration

@@ -1,15 +1,17 @@
-#include "event_processor.h"
-#include "usb_event_types.h"
-#include "usb_input.h"
-#include "usb_output.h"
+#include "engine/engine.h"
+#include "usb/usb.h"
 
 
 static void process_tick_event(const usb_tick_data_t *tick_data);
-static void process_device_connected(const usb_device_data_t *device_data);
-static void process_device_disconnected(const usb_device_data_t *device_data);
+// static void process_device_connected(const usb_device_data_t *device_data);
+// static void process_device_disconnected(const usb_device_data_t *device_data);
 
 
-void event_processor_process(void) {
+void engine_init(void) {
+}
+
+
+void engine_task(void) {
     usb_input_event_t input_event;
     usb_output_event_t output_event;
 
@@ -35,11 +37,11 @@ void event_processor_process(void) {
                 break;
 
             case USB_INPUT_DEVICE_CONNECTED:
-                process_device_connected(&input_event.data.device);
+                // process_device_connected(&input_event.data.device);
                 break;
 
             case USB_INPUT_DEVICE_DISCONNECTED:
-                process_device_disconnected(&input_event.data.device);
+                // process_device_disconnected(&input_event.data.device);
                 break;
 
             default:
@@ -54,10 +56,10 @@ static void process_tick_event(const usb_tick_data_t *tick_data) {
     (void)tick_data; // Suppress unused parameter warning for now
 }
 
-static void process_device_connected(const usb_device_data_t *device_data) {
-    (void)device_data; // Suppress unused parameter warning for now
-}
-
-static void process_device_disconnected(const usb_device_data_t *device_data) {
-    (void)device_data; // Suppress unused parameter warning for now
-}
+// static void process_device_connected(const usb_device_data_t *device_data) {
+//     (void)device_data; // Suppress unused parameter warning for now
+// }
+//
+// static void process_device_disconnected(const usb_device_data_t *device_data) {
+//     (void)device_data; // Suppress unused parameter warning for now
+// }
