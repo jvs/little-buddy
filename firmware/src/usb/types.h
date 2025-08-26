@@ -1,8 +1,8 @@
 #ifndef USB_TYPES_H
 #define USB_TYPES_H
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 
 typedef enum {
