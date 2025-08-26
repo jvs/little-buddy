@@ -66,15 +66,16 @@ static void process_keyboard_event(const usb_keyboard_data_t *keyboard) {
     usb_output_event_t output_event;
     output_event.type = USB_OUTPUT_KEYBOARD;
     output_event.data.keyboard = *keyboard;
+    uint8_t *keycodes = output_event.data.keyboard.keycodes;
 
     if (is_stretch_layer_active) {
         for (uint8_t i = 0; i < 6; i++) {
-            uint8_t keycode = output_event.data.keyboard[i];
+            uint8_t keycode = keycodes[i];
             switch (keycode) {
-                case 0x0B: output_event.data.keyboard[i] = 0x50; break;
-                case 0x0D: output_event.data.keyboard[i] = 0x51; break;
-                case 0x0E: output_event.data.keyboard[i] = 0x52; break;
-                case 0x0F: output_event.data.keyboard[i] = 0x4F; break;
+                case 0x0B: keycodes[i] = 0x50; break;
+                case 0x0D: keycodes[i] = 0x51; break;
+                case 0x0E: keycodes[i] = 0x52; break;
+                case 0x0F: keycodes[i] = 0x4F; break;
             }
 
         }
