@@ -8,17 +8,17 @@
 
 
 static void show_input_event(usb_input_event_t *event);
-static void show_input_keyboard(usb_keyboard_data_t *keyboard);
+static void show_input_keyboard_event(usb_keyboard_data_t *keyboard);
 static void show_input_mouse_event(usb_mouse_data_t *mouse);
 
 
 void debugger_show_inputs(void) {
-    set_input_callback(&show_input_event);
+    usb_set_input_callback(&show_input_event);
 }
 
 
 void debugger_hide_inputs(void) {
-    set_input_callback(NULL);
+    usb_set_input_callback(NULL);
 }
 
 
@@ -33,7 +33,7 @@ static void show_input_event(usb_input_event_t *event) {
 }
 
 
-static void show_input_keyboard(usb_keyboard_data_t *keyboard) {
+static void show_input_keyboard_event(usb_keyboard_data_t *keyboard) {
     if (
         keyboard->modifier == 0
         && keyboard->keycodes[0] == 0
