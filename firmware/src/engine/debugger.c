@@ -1,11 +1,14 @@
 #include "engine/debugger.h"
+
+#include <stdio.h>
+
 #include "usb/usb.h"
 #include "display/display.h"
 
 
 static void show_input_event(usb_input_event_t *event);
-static void show_input_keyboard(usb_input_event_t *event);
-static void show_input_mouse_event(usb_input_event_t *event);
+static void show_input_keyboard(usb_keyboard_data_t *keyboard);
+static void show_input_mouse_event(usb_mouse_data_t *mouse);
 
 
 void debugger_show_inputs(void) {
@@ -39,7 +42,7 @@ static void show_input_keyboard(usb_keyboard_data_t *keyboard) {
         && keyboard->keycodes[4] == 0
         && keyboard->keycodes[5] == 0
     ) {
-        return
+        return;
     }
 
     int16_t x = 1;
