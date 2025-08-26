@@ -33,11 +33,11 @@ void display_copy_pixels(const uint8_t *pixel_data) {
 void display_draw_char(int16_t x, int16_t y, char c) {
     if (!display_ok) return;
 
-    sh1107_draw_char(x, y, c);
+    sh1107_draw_char(&display, x, y, c);
 }
 
 void display_draw_string(int16_t x, int16_t y, const char *str) {
     if (!display_ok) return;
 
-    sh1107_draw_string(x, y, str);
+    sh1107_draw_string(&display, x, y, str);
 }
