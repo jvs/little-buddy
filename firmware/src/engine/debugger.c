@@ -23,8 +23,6 @@ void debugger_hide_inputs(void) {
 
 
 static void show_input_event(usb_input_event_t *event) {
-    display_clear_buffer();
-
     if (event->type == USB_INPUT_MOUSE) {
         show_input_mouse_event(&(event->data.mouse));
     } else if (event->type == USB_INPUT_KEYBOARD) {
@@ -46,9 +44,10 @@ static void show_input_keyboard_event(usb_keyboard_data_t *keyboard) {
         return;
     }
 
-    int16_t x = 1;
-    int16_t y = 1;
+    int16_t x = 0;
+    int16_t y = 0;
 
+    display_clear_buffer();
     display_draw_string(x, y, "KEYBOARD");
     y += 10;
 
@@ -78,9 +77,10 @@ static void show_input_mouse_event(usb_mouse_data_t *mouse) {
         return;
     }
 
-    int16_t x = 1;
-    int16_t y = 1;
+    int16_t x = 0;
+    int16_t y = 0;
 
+    display_clear_buffer();
     display_draw_string(x, y, "MOUSE");
     y += 10;
 
@@ -101,4 +101,6 @@ static void show_input_mouse_event(usb_mouse_data_t *mouse) {
     snprintf(buffer, sizeof(buffer), "BTN: %X", mouse->buttons);
     display_draw_string(x, y, buffer);
     y += 10;
+
+    display_show_buffer();
 }
