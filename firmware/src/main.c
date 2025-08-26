@@ -6,8 +6,7 @@
 #include <tusb.h>
 #include <pio_usb.h>
 
-#include "display_icons.h"
-#include "sh1107_display.h"
+#include "display/display.h"
 #include "engine/engine.h"
 #include "usb/usb.h"
 
@@ -28,29 +27,27 @@ int main() {
     gpio_pull_up(3);
 
     // Initialize display (optional - may not be present)
-    sh1107_t display;
-    bool display_ok = sh1107_init(&display, i2c1);
+    bool display_ok = display_init(i2c1);
 
     // Show initial startup message
     if (display_ok) {
-        sh1107_clear(&display);
-        sh1107_draw_string(&display, 1, 10, "STARTING...");
-        sh1107_display(&display);
-        sleep_ms(500);
+        display_clear_buffer();
+        display_draw_string(1, 10, "STARTING...");
+        display_show_buffer();
     }
+
+    sleep_ms(500);
 
     usb_init();
     engine_init();
 
-    // Wait a bit for USB to initialize
     sleep_ms(100);
 
     // Show USB ready message
     if (display_ok) {
-        sh1107_clear(&display);
-        // display_icons_draw(&display, ICON_BOMB);
-        sh1107_draw_string(&display, 1, 10, "READY!");
-        sh1107_display(&display);
+        display_clear_buffer();
+        display_draw_string(1, 10, "READY...");
+        display_show_buffer();
     }
 
     while (1) {

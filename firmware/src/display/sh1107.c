@@ -1,4 +1,4 @@
-#include "sh1107_display.h"
+#include "display/sh1107.h"
 #include "hardware/i2c.h"
 #include <string.h>
 
@@ -176,9 +176,9 @@ void sh1107_set_contrast(sh1107_t *display, uint8_t contrast) {
 
 
 void sh1107_draw_buffer(sh1107_t *display, const uint8_t *pixel_data) {
-    // Copy icon data directly to framebuffer (fastest)
+    // Copy pixel data directly to framebuffer
     memcpy(display->buffer, pixel_data, 1024);
-    sh1107_display(display);
+    // sh1107_display(display);
 
     // OR send page by page to display (if you want to avoid framebuffer)
     // for (int page = 0; page < 8; page++) {

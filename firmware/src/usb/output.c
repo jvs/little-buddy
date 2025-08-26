@@ -13,10 +13,16 @@ typedef struct {
 } usb_output_queue_t;
 
 static usb_output_queue_t queue;
+static usb_output_event_callback_t output_callback;
 
 void usb_output_init(void) {
     memset(&queue, 0, sizeof(usb_output_queue_t));
 }
+
+void usb_set_output_callback(usb_output_event_callback_t cb) {
+    output_callback = cb;
+}
+
 
 bool usb_output_enqueue(const usb_output_event_t *event) {
     if (queue.count >= USB_OUTPUT_QUEUE_SIZE) {
@@ -38,6 +44,10 @@ bool usb_output_dequeue(usb_output_event_t *event) {
     *event = queue.events[queue.head];
     queue.head = (queue.head + 1) % USB_OUTPUT_QUEUE_SIZE;
     queue.count--;
+
+    if (output_callback != NULL) {
+        output_callback(event);
+    }
 
     return true;
 }

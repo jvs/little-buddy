@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+
 typedef enum {
     USB_INPUT_NONE = 0,
     USB_INPUT_MOUSE,
@@ -13,11 +14,13 @@ typedef enum {
     USB_INPUT_TICK
 } usb_input_type_t;
 
+
 typedef enum {
     USB_OUTPUT_NONE = 0,
     USB_OUTPUT_MOUSE,
     USB_OUTPUT_KEYBOARD
 } usb_output_type_t;
+
 
 typedef struct {
     int8_t delta_x;
@@ -26,10 +29,12 @@ typedef struct {
     uint8_t buttons;
 } usb_mouse_data_t;
 
+
 typedef struct {
     uint8_t modifier;
     uint8_t keycodes[6];
 } usb_keyboard_data_t;
+
 
 typedef struct {
     uint8_t device_address;
@@ -37,10 +42,12 @@ typedef struct {
     const char* device_type;
 } usb_device_data_t;
 
+
 typedef struct {
     uint32_t tick_count;       // Running tick counter
     uint32_t delta_us;         // Microseconds since last tick
 } usb_tick_data_t;
+
 
 typedef struct {
     usb_input_type_t type;
@@ -55,6 +62,7 @@ typedef struct {
     } data;
 } usb_input_event_t;
 
+
 // Output event structure (no timestamp/sequence needed)
 typedef struct {
     usb_output_type_t type;
@@ -64,7 +72,11 @@ typedef struct {
     } data;
 } usb_output_event_t;
 
+
 // Timing utilities (handles uint32_t wraparound correctly)
 uint32_t time_delta_ms(uint32_t start_ms, uint32_t end_ms);
+
+typedef void (*usb_input_event_callback_t)(usb_input_event_t *event);
+typedef void (*usb_output_event_callback_t)(usb_output_event_t *event);
 
 #endif

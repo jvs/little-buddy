@@ -1,8 +1,8 @@
-#ifndef SH1107_DISPLAY_H
-#define SH1107_DISPLAY_H
+#ifndef DISPLAY_SH1107_H
+#define DISPLAY_SH1107_H
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include "hardware/i2c.h"
 
 #define SH1107_I2C_ADDRESS 0x3D

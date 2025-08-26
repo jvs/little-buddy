@@ -1,5 +1,6 @@
 #include "engine/engine.h"
 #include "usb/usb.h"
+#include "engine/debugger.h"
 
 
 static void process_tick_event(const usb_tick_data_t *tick_data);
@@ -8,6 +9,7 @@ static void process_tick_event(const usb_tick_data_t *tick_data);
 
 
 void engine_init(void) {
+    debugger_show_inputs();
 }
 
 

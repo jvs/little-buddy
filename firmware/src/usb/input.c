@@ -13,12 +13,22 @@ typedef struct {
 } usb_input_queue_t;
 
 static usb_input_queue_t queue;
+static usb_input_event_callback_t input_callback;
 
 void usb_input_init(void) {
     memset(&queue, 0, sizeof(usb_input_queue_t));
+    input_callback = NULL;
+}
+
+void usb_set_input_callback(usb_input_event_callback_t cb) {
+    input_callback = cb;
 }
 
 bool usb_input_enqueue(const usb_input_event_t *event) {
+    if (input_callback != NULL) {
+        input_callback(event);
+    }
+
     if (queue.count >= USB_INPUT_QUEUE_SIZE) {
         return false;
     }
