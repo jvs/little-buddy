@@ -1,5 +1,6 @@
 #include "engine/debugger.h"
 
+#include <stddef.h>
 #include <stdio.h>
 
 #include "usb/usb.h"
