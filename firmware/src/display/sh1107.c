@@ -121,8 +121,8 @@ void sh1107_display(sh1107_t *display) {
 
     for (uint8_t page = 0; page < SH1107_PAGES; page++) {
         sh1107_write_command(display, 0xB0 + page);
-        sh1107_write_command(display, SH1107_SETLOWCOLUMN);
-        sh1107_write_command(display, SH1107_SETHIGHCOLUMN);
+        sh1107_write_command(display, SH1107_SETLOWCOLUMN | (SH1107_COLUMN_OFFSET & 0x0F));
+        sh1107_write_command(display, SH1107_SETHIGHCOLUMN | ((SH1107_COLUMN_OFFSET >> 4) & 0x0F));
 
         sh1107_write_data(display, &display->buffer[page * SH1107_WIDTH], SH1107_WIDTH);
     }
