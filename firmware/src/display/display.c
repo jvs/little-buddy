@@ -1,5 +1,6 @@
 #include "display/display.h"
 
+#include <hardware/i2c.h>
 #include "display/sh1107.h"
 
 
