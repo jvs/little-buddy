@@ -12,7 +12,7 @@ static void send_usb_outputs(void);
 static void reset_engine(void);
 
 // input.c
-void usb_input_init(void);
+void engine_input_init(void);
 
 // output.c
 void engine_output_init(void);

@@ -40,7 +40,7 @@ bool engine_output_dequeue(engine_event_t *event) {
         queue.count--;
 
         // Ignore non-events and tick events.
-        if (event.type != ENGINE_NON_EVENT && event.type != ENGINE_TICK_EVENT) {
+        if (event->type != ENGINE_NON_EVENT && event->type != ENGINE_TICK_EVENT) {
             return true;
         }
     };
