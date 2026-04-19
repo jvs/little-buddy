@@ -2,7 +2,7 @@
 #include "engine/keycodes.h"
 
 // nodes/remapper.c
-remapper_apply(engine_event_t *event);
+void remapper_apply(engine_event_t *event);
 
 // nodes/homerun.c
 void homerun_init(void);

@@ -118,12 +118,6 @@
 #define KEY_RIGHT_ALT      0xE6
 #define KEY_RIGHT_GUI      0xE7
 
-#define KEY_LEADER         0xE8
-#define KEY_FOLLOWER       0xE9
-#define KEY_MAGIC          0xEA
-#define KEY_CHARM          0xEB
-#define KEY_SPIN           0xEC
-
-#define TOTAL_NUM_KEYS     0xED
+#define TOTAL_NUM_KEYS     0xE8
 
 #endif
