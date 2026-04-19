@@ -8,7 +8,6 @@
 #include "engine/debugger.h"
 
 static void receive_usb_inputs(void);
-static void run_engine(void);
 static void send_usb_outputs(void);
 static void reset_engine(void);
 
@@ -20,6 +19,10 @@ void engine_input_init(void);
 
 // output.c
 void engine_output_init(void);
+
+// custom.c
+void engine_custom_init(void);
+void engine_custom_task(void);
 
 // Input state — previous USB reports for diffing
 static usb_keyboard_data_t prev_keyboard;
@@ -34,13 +37,14 @@ static uint8_t output_buttons;
 void engine_init(void) {
     engine_input_init();
     engine_output_init();
+    engine_custom_init();
     debugger_show_inputs();
 }
 
 
 void engine_task(void) {
     receive_usb_inputs();
-    run_engine();
+    engine_custom_task();
     send_usb_outputs();
 }
 
@@ -152,16 +156,6 @@ static void receive_usb_inputs(void) {
             default:
                 break;
         }
-    }
-}
-
-
-static void run_engine(void) {
-    // For now, just copy from the input queue to the output queue.
-    engine_event_t event;
-
-    while (engine_input_dequeue(&event)) {
-        engine_output_enqueue(&event);
     }
 }
 
