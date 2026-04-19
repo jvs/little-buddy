@@ -51,7 +51,3 @@ bool usb_input_dequeue(usb_input_event_t *event) {
 
     return true;
 }
-
-uint32_t usb_input_count(void) {
-    return queue.count;
-}

@@ -51,7 +51,3 @@ bool usb_output_dequeue(usb_output_event_t *event) {
 
     return true;
 }
-
-uint32_t usb_output_count(void) {
-    return queue.count;
-}

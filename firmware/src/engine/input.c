@@ -42,7 +42,3 @@ bool engine_input_dequeue(engine_event_t *event) {
 
     return true;
 }
-
-uint32_t engine_input_count(void) {
-    return queue.count;
-}

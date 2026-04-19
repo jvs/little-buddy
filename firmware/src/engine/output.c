@@ -31,19 +31,17 @@ bool engine_output_enqueue(const engine_event_t *event) {
 }
 
 bool engine_output_dequeue(engine_event_t *event) {
-    if (queue.count == 0) {
-        return false;
-    }
+    while (true) {
+        if (queue.count == 0) {
+            return false;
+        }
+        *event = queue.events[queue.head];
+        queue.head = (queue.head + 1) % ENGINE_OUTPUT_QUEUE_SIZE;
+        queue.count--;
 
-    *event = queue.events[queue.head];
-    queue.head = (queue.head + 1) % ENGINE_OUTPUT_QUEUE_SIZE;
-    queue.count--;
-
-
-    // Tell the caller to ignore non-events and tick events.
-    return event.type != ENGINE_NON_EVENT && event.type == ENGINE_TICK_EVENT;
-}
-
-uint32_t engine_output_count(void) {
-    return queue.count;
+        // Ignore non-events and tick events.
+        if (event.type != ENGINE_NON_EVENT && event.type != ENGINE_TICK_EVENT) {
+            return true;
+        }
+    };
 }

@@ -10,6 +10,9 @@ void engine_task(void);
 // input.c
 bool engine_input_dequeue(usb_input_event_t *event);
 bool engine_input_enqueue(const usb_input_event_t *event);
-uint32_t engine_input_count();
+
+// output.c
+bool engine_output_dequeue(engine_event_t *event);
+bool engine_output_enqueue(const engine_event_t *event);
 
 #endif
