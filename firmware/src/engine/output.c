@@ -5,6 +5,7 @@
 
 #define ENGINE_OUTPUT_QUEUE_SIZE 32
 
+
 typedef struct {
     engine_event_t events[ENGINE_OUTPUT_QUEUE_SIZE];
     volatile uint32_t head;
@@ -12,11 +13,14 @@ typedef struct {
     volatile uint32_t count;
 } engine_output_queue_t;
 
+
 static engine_output_queue_t queue;
+
 
 void engine_output_init(void) {
     memset(&queue, 0, sizeof(engine_output_queue_t));
 }
+
 
 bool engine_output_enqueue(const engine_event_t *event) {
     if (queue.count >= ENGINE_OUTPUT_QUEUE_SIZE) {
@@ -29,6 +33,7 @@ bool engine_output_enqueue(const engine_event_t *event) {
 
     return true;
 }
+
 
 bool engine_output_dequeue(engine_event_t *event) {
     while (true) {

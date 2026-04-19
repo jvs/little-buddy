@@ -13,11 +13,14 @@ typedef struct {
     volatile uint32_t count;
 } engine_input_queue_t;
 
+
 static engine_input_queue_t queue;
+
 
 void engine_input_init(void) {
     memset(&queue, 0, sizeof(engine_input_queue_t));
 }
+
 
 bool engine_input_enqueue(const engine_event_t *event) {
     if (queue.count >= ENGINE_INPUT_QUEUE_SIZE) {
@@ -30,6 +33,7 @@ bool engine_input_enqueue(const engine_event_t *event) {
 
     return true;
 }
+
 
 bool engine_input_dequeue(engine_event_t *event) {
     if (queue.count == 0) {
