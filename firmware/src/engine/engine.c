@@ -6,98 +6,79 @@
 #include "usb/usb.h"
 #include "engine/debugger.h"
 
+static void receive_usb_inputs(void);
+static void run_engine(void);
+static void send_usb_outputs(void);
+static void reset_engine(void);
 
-static bool is_stretch_layer_active = false;
+// input.c
+void usb_input_init(void);
 
-static void process_keyboard_event(const usb_keyboard_data_t *keyboard);
-static void process_mouse_event(const usb_mouse_data_t *mouse);
-static void process_tick_event(const usb_tick_data_t *tick_data);
-// static void process_device_connected(const usb_device_data_t *device_data);
-// static void process_device_disconnected(const usb_device_data_t *device_data);
+// output.c
+void engine_output_init(void);
 
 
 void engine_init(void) {
+    engine_input_init();
+    engine_output_init();
     debugger_show_inputs();
 }
 
 
 void engine_task(void) {
-    usb_input_event_t input_event;
-    // usb_output_event_t output_event;
+    receive_usb_inputs();
+    run_engine();
+    send_usb_outputs();
+}
 
-    // Process all events in the input queue
+static void receive_usb_inputs(void) {
+    usb_input_event_t input_event;
+
+    // Process all events in the input queue.
+    // TODO: Create engine_event_t values and enqueue them with engine_input_enqueue.
     while (usb_input_dequeue(&input_event)) {
         switch (input_event.type) {
             case USB_INPUT_MOUSE:
-                process_mouse_event(&input_event.data.mouse);
-                // output_event.type = USB_OUTPUT_MOUSE;
-                // output_event.data.mouse = input_event.data.mouse;
-                // (void)usb_output_enqueue(&output_event);
                 break;
 
             case USB_INPUT_KEYBOARD:
-                process_keyboard_event(&input_event.data.keyboard);
-                // output_event.type = USB_OUTPUT_KEYBOARD;
-                // output_event.data.keyboard = input_event.data.keyboard;
-                // (void)usb_output_enqueue(&output_event);
                 break;
 
             case USB_INPUT_TICK:
-                process_tick_event(&input_event.data.tick);
                 break;
 
             case USB_INPUT_DEVICE_CONNECTED:
-                // process_device_connected(&input_event.data.device);
+                reset_engine();
                 break;
 
             case USB_INPUT_DEVICE_DISCONNECTED:
-                // process_device_disconnected(&input_event.data.device);
+                reset_engine();
                 break;
 
             default:
-                // Unknown event type, ignore
                 break;
         }
     }
 }
 
+static void run_engine(void) {
+    // For now, just copy from the input queue to the output queue.
+    engine_event_t input_event;
 
-static void process_keyboard_event(const usb_keyboard_data_t *keyboard) {
-    usb_output_event_t output_event;
-    output_event.type = USB_OUTPUT_KEYBOARD;
-    output_event.data.keyboard = *keyboard;
-    uint8_t *keycodes = output_event.data.keyboard.keycodes;
-
-    if (is_stretch_layer_active) {
-        for (uint8_t i = 0; i < 6; i++) {
-            uint8_t keycode = keycodes[i];
-            switch (keycode) {
-                case 0x0B: keycodes[i] = 0x50; break;
-                case 0x0D: keycodes[i] = 0x51; break;
-                case 0x0E: keycodes[i] = 0x52; break;
-                case 0x0F: keycodes[i] = 0x4F; break;
-            }
-
-        }
+    // Process all events in the input queue.
+    while (engine_input_dequeue(&input_event)) {
+        engine_output_enqueue(&input_event);
     }
-
-    (void) usb_output_enqueue(&output_event);
 }
 
+static void send_usb_outputs(void) {
+    engine_event_t output_event;
 
-static void process_mouse_event(const usb_mouse_data_t *mouse) {
-    is_stretch_layer_active = (mouse->buttons == 1 || mouse->buttons == 2);
+    while (engine_output_dequeue(&output_event)) {
+        // TODO: Create a usb_output_event_t and call usb_output_enqueue.
+    }
 }
 
-
-static void process_tick_event(const usb_tick_data_t *tick_data) {
-    (void)tick_data; // Suppress unused parameter warning for now
+static void reset_engine(void) {
+    // Do thing for now. Eventually, maybe reset the queues and internal state.
 }
-
-// static void process_device_connected(const usb_device_data_t *device_data) {
-//     (void)device_data; // Suppress unused parameter warning for now
-// }
-//
-// static void process_device_disconnected(const usb_device_data_t *device_data) {
-//     (void)device_data; // Suppress unused parameter warning for now
-// }

@@ -51,7 +51,7 @@ typedef struct {
 
 typedef struct {
     usb_input_type_t type;
-    uint32_t timestamp_ms;
+    uint64_t timestamp_us;
     uint32_t sequence_id;      // Event sequence number
     uint8_t interface_id;      // Which HID interface (0, 1, etc.)
     union {
@@ -72,9 +72,6 @@ typedef struct {
     } data;
 } usb_output_event_t;
 
-
-// Timing utilities (handles uint32_t wraparound correctly)
-uint32_t time_delta_ms(uint32_t start_ms, uint32_t end_ms);
 
 typedef void (*usb_input_event_callback_t)(usb_input_event_t *event);
 typedef void (*usb_output_event_callback_t)(usb_output_event_t *event);

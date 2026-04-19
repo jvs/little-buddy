@@ -92,7 +92,7 @@ void usb_host_task(void) {
 void enqueue_input_event(usb_input_type_t type, uint8_t device_address, uint8_t interface_id, void *event_data) {
     usb_input_event_t event;
     event.type = type;
-    event.timestamp_ms = time_us_32() / 1000;  // Convert microseconds to milliseconds
+    event.timestamp_us = time_us_64();
     event.sequence_id = ++input_counter;
     event.interface_id = interface_id;
 
