@@ -8,7 +8,6 @@
 
 #include "display/display.h"
 #include "engine/engine.h"
-#include "system/system.h"
 #include "usb/usb.h"
 
 
@@ -18,9 +17,6 @@ int main() {
 
     // Initialize board
     board_init();
-
-    // Turn off the on-board NeoPixel.
-    system_disable_neopixel();
 
     // Initialize I2C for STEMMA QT connector (GPIO 2=SDA, 3=SCL)
     sleep_ms(500);

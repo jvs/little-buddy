@@ -7,7 +7,4 @@ void system_bootsel(void);
 // Software reset via the watchdog.
 void system_reboot(void);
 
-// Send all-zeros to the on-board WS2812 NeoPixel (GPIO 21) to turn it off.
-void system_disable_neopixel(void);
-
 #endif

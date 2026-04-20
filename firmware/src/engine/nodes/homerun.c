@@ -150,7 +150,9 @@ static void emit_key(engine_event_type_t type, uint8_t keycode, uint64_t timesta
 }
 
 
-static void emit_combo(const hr_layer_entry_t *entry, uint64_t timestamp_us) {
+// Emit press/release separately so the OS sees the key actually held, which
+// enables auto-repeat (e.g., hold D+J to get repeated DOWN arrows).
+static void emit_combo_press(const hr_layer_entry_t *entry, uint64_t timestamp_us) {
     if (entry->action != NULL) {
         entry->action();
         return;
@@ -159,6 +161,11 @@ static void emit_combo(const hr_layer_entry_t *entry, uint64_t timestamp_us) {
         emit_key(ENGINE_PRESS_KEY_EVENT, entry->output_mod, timestamp_us);
     }
     emit_key(ENGINE_PRESS_KEY_EVENT, entry->output_key, timestamp_us);
+}
+
+
+static void emit_combo_release(const hr_layer_entry_t *entry, uint64_t timestamp_us) {
+    if (entry->action != NULL) return;
     emit_key(ENGINE_RELEASE_KEY_EVENT, entry->output_key, timestamp_us);
     if (entry->output_mod != 0) {
         emit_key(ENGINE_RELEASE_KEY_EVENT, entry->output_mod, timestamp_us);
@@ -174,7 +181,7 @@ static void apply_in_layer(const engine_event_t *event) {
     if (event->type == ENGINE_RELEASE_KEY_EVENT && event->data.keycode == active_layer_hr) {
         for (uint8_t i = 0; i < armed_count; i++) {
             const hr_layer_entry_t *entry = find_layer_entry(active_layer_hr, armed[i]);
-            if (entry != NULL) emit_combo(entry, event->timestamp_us);
+            if (entry != NULL) emit_combo_release(entry, event->timestamp_us);
             list_add(pending_drop, &pending_drop_count, HR_MAX_ARMED, armed[i]);
         }
         char letter[2] = { 'A' + (active_layer_hr - KEY_A), 0 };
@@ -184,18 +191,22 @@ static void apply_in_layer(const engine_event_t *event) {
         return;
     }
 
-    // Press of a layer-valid trigger → arm, emit nothing yet.
-    if (event->type == ENGINE_PRESS_KEY_EVENT &&
-        find_layer_entry(active_layer_hr, event->data.keycode) != NULL) {
-        list_add(armed, &armed_count, HR_MAX_ARMED, event->data.keycode);
-        return;
+    // Press of a layer-valid trigger → arm and emit the combo's press edge now
+    // so the OS can auto-repeat while the trigger is held.
+    if (event->type == ENGINE_PRESS_KEY_EVENT) {
+        const hr_layer_entry_t *entry = find_layer_entry(active_layer_hr, event->data.keycode);
+        if (entry != NULL) {
+            list_add(armed, &armed_count, HR_MAX_ARMED, event->data.keycode);
+            emit_combo_press(entry, event->timestamp_us);
+            return;
+        }
     }
 
-    // Release of an armed trigger → emit combo.
+    // Release of an armed trigger → emit the combo's release edge.
     if (event->type == ENGINE_RELEASE_KEY_EVENT &&
         list_remove(armed, &armed_count, event->data.keycode)) {
         const hr_layer_entry_t *entry = find_layer_entry(active_layer_hr, event->data.keycode);
-        if (entry != NULL) emit_combo(entry, event->timestamp_us);
+        if (entry != NULL) emit_combo_release(entry, event->timestamp_us);
         return;
     }
 
