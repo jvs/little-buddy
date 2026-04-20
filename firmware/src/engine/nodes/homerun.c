@@ -141,8 +141,11 @@ void homerun_enqueue(engine_event_t event) {
     if (active_layer_hr != 0) {
         // Release of the HR key → end the layer.
         if (event.type == ENGINE_RELEASE_KEY_EVENT && event.data.keycode == active_layer_hr) {
-            // Armed triggers never got their combos emitted; drop their releases too.
+            // Any still-armed triggers: user released HR first (fast-typing race) —
+            // emit their combos now, then drop the straggling trigger releases.
             for (uint8_t i = 0; i < armed_count; i++) {
+                const hr_layer_entry_t *entry = find_layer_entry(active_layer_hr, armed[i]);
+                if (entry != NULL) emit_combo(entry, event.timestamp_us);
                 list_add(pending_drop, &pending_drop_count, HR_MAX_ARMED, armed[i]);
             }
             active_layer_hr = 0;
