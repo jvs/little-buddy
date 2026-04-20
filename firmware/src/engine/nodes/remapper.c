@@ -8,7 +8,12 @@ typedef enum {
 } host_os_t;
 
 
-#define HOST_OS HOST_OS_MAC
+static host_os_t host_os = HOST_OS_MAC;
+
+
+void remapper_toggle_os(void) {
+    host_os = (host_os == HOST_OS_MAC) ? HOST_OS_WINDOWS : HOST_OS_MAC;
+}
 
 
 static uint8_t remap_keys(uint8_t keycode) {
@@ -18,7 +23,7 @@ static uint8_t remap_keys(uint8_t keycode) {
         case KEY_CAPS_LOCK:  return KEY_ESCAPE;
     }
 
-    if (HOST_OS == HOST_OS_MAC) {
+    if (host_os == HOST_OS_MAC) {
         // Swap Alt and GUI on MacOS since the physical Alt key is mapped to GUI in MacOS.
         switch (keycode) {
             case KEY_LEFT_ALT:   return KEY_LEFT_GUI;

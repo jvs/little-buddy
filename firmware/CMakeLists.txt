@@ -40,6 +40,7 @@ target_link_libraries(little_buddy
     hardware_dma
     hardware_flash
     hardware_i2c
+    hardware_watchdog
     tinyusb_device
     tinyusb_host
     tinyusb_board

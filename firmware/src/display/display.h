@@ -14,4 +14,6 @@ void display_copy_pixels(const uint8_t *pixel_data);
 void display_draw_char(int16_t x, int16_t y, char c);
 void display_draw_string(int16_t x, int16_t y, const char *str);
 
+void display_toggle(void);
+
 #endif

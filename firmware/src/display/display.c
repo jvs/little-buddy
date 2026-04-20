@@ -5,6 +5,7 @@
 
 static sh1107_t display;
 static bool display_ok = false;
+static bool display_on = true;
 
 
 bool display_init(i2c_inst_t *i2c) {
@@ -45,4 +46,12 @@ void display_draw_string(int16_t x, int16_t y, const char *str) {
     if (!display_ok) return;
 
     sh1107_draw_string(&display, x, y, str);
+}
+
+
+void display_toggle(void) {
+    if (!display_ok) return;
+
+    display_on = !display_on;
+    sh1107_set_power(&display, display_on);
 }

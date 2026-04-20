@@ -2,6 +2,12 @@
 
 #include "engine/engine.h"
 #include "engine/keycodes.h"
+#include "display/display.h"
+#include "system/system.h"
+
+
+// Forward decls for Z-layer actions.
+void remapper_toggle_os(void);
 
 
 #define HR_BUFFER_SIZE 64
@@ -12,10 +18,13 @@
 #define PARTIAL_OVERLAP_LIMIT_US 250000
 
 
+typedef void (*hr_action_fn)(void);
+
 typedef struct {
     uint8_t trigger;
-    uint8_t output_key;
-    uint8_t output_mod;  // 0 = no modifier
+    uint8_t output_key;     // ignored when `action` is non-NULL
+    uint8_t output_mod;     // 0 = no modifier
+    hr_action_fn action;    // NULL → key+mod combo; otherwise invoked instead
 } hr_layer_entry_t;
 
 
@@ -35,8 +44,32 @@ static const hr_layer_entry_t f_layer[] = {
 #define F_LAYER_COUNT (sizeof(f_layer) / sizeof(f_layer[0]))
 
 
+// D layer — navigation. Active while D is held as a modifier.
+static const hr_layer_entry_t d_layer[] = {
+    { KEY_H, KEY_LEFT,      0 },
+    { KEY_J, KEY_DOWN,      0 },
+    { KEY_K, KEY_UP,        0 },
+    { KEY_L, KEY_RIGHT,     0 },
+    { KEY_U, KEY_PAGE_UP,   0 },
+    { KEY_M, KEY_PAGE_DOWN, 0 },
+};
+
+#define D_LAYER_COUNT (sizeof(d_layer) / sizeof(d_layer[0]))
+
+
+// Z layer — device actions. Triggers fire callbacks instead of emitting keys.
+static const hr_layer_entry_t z_layer[] = {
+    { KEY_O, 0, 0, remapper_toggle_os },
+    { KEY_D, 0, 0, display_toggle },
+    { KEY_B, 0, 0, system_bootsel },
+    { KEY_R, 0, 0, system_reboot },
+};
+
+#define Z_LAYER_COUNT (sizeof(z_layer) / sizeof(z_layer[0]))
+
+
 static bool is_homerun_key(uint8_t keycode) {
-    return keycode == KEY_F;
+    return keycode == KEY_F || keycode == KEY_D || keycode == KEY_Z;
 }
 
 
@@ -44,6 +77,14 @@ static const hr_layer_entry_t *find_layer_entry(uint8_t hr_key, uint8_t trigger)
     if (hr_key == KEY_F) {
         for (uint8_t i = 0; i < F_LAYER_COUNT; i++) {
             if (f_layer[i].trigger == trigger) return &f_layer[i];
+        }
+    } else if (hr_key == KEY_D) {
+        for (uint8_t i = 0; i < D_LAYER_COUNT; i++) {
+            if (d_layer[i].trigger == trigger) return &d_layer[i];
+        }
+    } else if (hr_key == KEY_Z) {
+        for (uint8_t i = 0; i < Z_LAYER_COUNT; i++) {
+            if (z_layer[i].trigger == trigger) return &z_layer[i];
         }
     }
     return NULL;
@@ -110,6 +151,10 @@ static void emit_key(engine_event_type_t type, uint8_t keycode, uint64_t timesta
 
 
 static void emit_combo(const hr_layer_entry_t *entry, uint64_t timestamp_us) {
+    if (entry->action != NULL) {
+        entry->action();
+        return;
+    }
     if (entry->output_mod != 0) {
         emit_key(ENGINE_PRESS_KEY_EVENT, entry->output_mod, timestamp_us);
     }

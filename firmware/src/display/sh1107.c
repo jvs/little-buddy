@@ -175,6 +175,13 @@ void sh1107_set_contrast(sh1107_t *display, uint8_t contrast) {
 }
 
 
+void sh1107_set_power(sh1107_t *display, bool on) {
+    if (!display->initialized) return;
+
+    sh1107_write_command(display, on ? SH1107_DISPLAYON : SH1107_DISPLAYOFF);
+}
+
+
 void sh1107_draw_buffer(sh1107_t *display, const uint8_t *pixel_data) {
     // Copy pixel data directly to framebuffer
     memcpy(display->buffer, pixel_data, 1024);

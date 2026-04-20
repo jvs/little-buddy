@@ -53,5 +53,6 @@ void sh1107_draw_buffer(sh1107_t *display, const uint8_t *pixel_data);
 void sh1107_draw_char(sh1107_t *display, int16_t x, int16_t y, char c);
 void sh1107_draw_string(sh1107_t *display, int16_t x, int16_t y, const char *str);
 void sh1107_set_contrast(sh1107_t *display, uint8_t contrast);
+void sh1107_set_power(sh1107_t *display, bool on);
 
 #endif
