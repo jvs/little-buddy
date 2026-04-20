@@ -7,7 +7,7 @@ void remapper_apply(engine_event_t *event);
 // nodes/homerun.c
 void homerun_init(void);
 void homerun_enqueue(engine_event_t event);
-bool homerun_dequeue(const engine_event_t *event);
+bool homerun_dequeue(engine_event_t *event);
 
 // nodes/leader.c
 void leader_enqueue(engine_event_t event);
