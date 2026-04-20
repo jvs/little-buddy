@@ -18,6 +18,11 @@ int main() {
     // Initialize board
     board_init();
 
+    // Disable the on-board NeoPixel (GPIO 20 = NEOPIXEL_POWER, active high).
+    gpio_init(20);
+    gpio_set_dir(20, GPIO_OUT);
+    gpio_put(20, 0);
+
     // Initialize I2C for STEMMA QT connector (GPIO 2=SDA, 3=SCL)
     sleep_ms(500);
     i2c_init(i2c1, 400000);

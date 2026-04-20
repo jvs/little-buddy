@@ -16,4 +16,11 @@ void display_draw_string(int16_t x, int16_t y, const char *str);
 
 void display_toggle(void);
 
+// Activity mode: show short messages in response to user actions. Messages
+// persist on screen for up to 60 seconds of idle time before clearing.
+void display_show_message(const char *text);
+void display_clear_if_showing(const char *text);
+void display_clear_activity(void);
+void display_tick(void);
+
 #endif

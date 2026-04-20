@@ -177,6 +177,8 @@ static void apply_in_layer(const engine_event_t *event) {
             if (entry != NULL) emit_combo(entry, event->timestamp_us);
             list_add(pending_drop, &pending_drop_count, HR_MAX_ARMED, armed[i]);
         }
+        char letter[2] = { 'A' + (active_layer_hr - KEY_A), 0 };
+        display_clear_if_showing(letter);
         active_layer_hr = 0;
         armed_count = 0;
         return;
@@ -206,6 +208,8 @@ static void apply_in_layer(const engine_event_t *event) {
 // the buffered events replay through the layer logic.
 static void promote_to_layer(void) {
     active_layer_hr = buffer[0].data.keycode;
+    char letter[2] = { 'A' + (active_layer_hr - KEY_A), 0 };
+    display_show_message(letter);
     for (uint8_t i = 1; i < buffer_count; i++) {
         apply_in_layer(&buffer[i]);
     }

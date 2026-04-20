@@ -1,5 +1,6 @@
 #include "engine/engine.h"
 #include "engine/keycodes.h"
+#include "display/display.h"
 
 
 typedef enum {
@@ -13,6 +14,7 @@ static host_os_t host_os = HOST_OS_MAC;
 
 void remapper_toggle_os(void) {
     host_os = (host_os == HOST_OS_MAC) ? HOST_OS_WINDOWS : HOST_OS_MAC;
+    display_show_message(host_os == HOST_OS_MAC ? "MAC" : "WINDOWS");
 }
 
 

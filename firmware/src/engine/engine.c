@@ -5,7 +5,7 @@
 #include <string.h>
 
 #include "usb/usb.h"
-#include "engine/debugger.h"
+#include "display/display.h"
 
 static void receive_usb_inputs(void);
 static void send_usb_outputs(void);
@@ -38,7 +38,6 @@ void engine_init(void) {
     engine_input_init();
     engine_output_init();
     engine_custom_init();
-    debugger_show_inputs();
 }
 
 
@@ -46,6 +45,7 @@ void engine_task(void) {
     receive_usb_inputs();
     engine_custom_task();
     send_usb_outputs();
+    display_tick();
 }
 
 
