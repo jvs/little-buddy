@@ -18,9 +18,17 @@ void system_reboot(void) {
 
 
 // WS2812 "0" bit at 125 MHz: ~0.35us high + ~0.9us low. NOP counts are
-// approximate but well within the LED's tolerance for "0". GPIO 20 is the
-// NeoPixel power switch (active high) — power up briefly to clock in the
-// off-state, then cut power to be sure.
+// approximate but well within the LED's tolerance for "0". noinline keeps
+// the loop body small enough for the M0+ conditional branch range.
+static void __attribute__((noinline)) ws2812_zero_bit(uint32_t mask) {
+    sio_hw->gpio_set = mask;
+    __asm volatile (".rept 35\n nop\n .endr\n");
+    sio_hw->gpio_clr = mask;
+    __asm volatile (".rept 95\n nop\n .endr\n");
+}
+
+// GPIO 20 is the NeoPixel power switch (active high) — power up briefly to
+// clock in the off-state, then cut power to be sure.
 void system_disable_neopixel(void) {
     const uint power_pin = 20;
     const uint data_pin = 21;
@@ -38,10 +46,7 @@ void system_disable_neopixel(void) {
     uint32_t save = save_and_disable_interrupts();
 
     for (int i = 0; i < 24; i++) {
-        sio_hw->gpio_set = mask;
-        __asm volatile (".rept 35\n nop\n .endr\n");
-        sio_hw->gpio_clr = mask;
-        __asm volatile (".rept 95\n nop\n .endr\n");
+        ws2812_zero_bit(mask);
     }
 
     restore_interrupts(save);
