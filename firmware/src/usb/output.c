@@ -51,3 +51,12 @@ bool usb_output_dequeue(usb_output_event_t *event) {
 
     return true;
 }
+
+bool usb_output_peek(usb_output_event_t *event) {
+    if (queue.count == 0) {
+        return false;
+    }
+
+    *event = queue.events[queue.head];
+    return true;
+}

@@ -38,9 +38,6 @@ void usb_device_task(void) {
 //--------------------------------------------------------------------+
 
 void send_keyboard_report(usb_keyboard_data_t *keyboard_data) {
-    // Check if keyboard instance is ready
-    if (!tud_hid_n_ready(0)) return;
-
     tud_hid_n_keyboard_report(
         0,
         0,
@@ -51,9 +48,6 @@ void send_keyboard_report(usb_keyboard_data_t *keyboard_data) {
 
 
 void send_mouse_report(usb_mouse_data_t *mouse_data) {
-    // Check if mouse instance is ready
-    if (!tud_hid_n_ready(1)) return;
-
     tud_hid_n_mouse_report(
         1,
         0,
@@ -73,19 +67,26 @@ void send_mouse_report(usb_mouse_data_t *mouse_data) {
 static void flush_output_events(void) {
     usb_output_event_t event;
 
-    // Process all events in the queue
-    while (usb_output_dequeue(&event)) {
+    // Peek first, only dequeue if the target endpoint can accept the report —
+    // otherwise the report is silently dropped and we get stuck keys when a
+    // release lands during a 5ms poll window.
+    while (usb_output_peek(&event)) {
         switch (event.type) {
-            case USB_OUTPUT_MOUSE:
-                send_mouse_report(&event.data.mouse);
-                break;
-
             case USB_OUTPUT_KEYBOARD:
+                if (!tud_hid_n_ready(0)) return;
+                usb_output_dequeue(&event);
                 send_keyboard_report(&event.data.keyboard);
                 break;
 
+            case USB_OUTPUT_MOUSE:
+                if (!tud_hid_n_ready(1)) return;
+                usb_output_dequeue(&event);
+                send_mouse_report(&event.data.mouse);
+                break;
+
             default:
-                // Unknown event type, skip
+                // Unknown event type — drop it so we don't loop forever.
+                usb_output_dequeue(&event);
                 break;
         }
     }
