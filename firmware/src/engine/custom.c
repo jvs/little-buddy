@@ -11,11 +11,11 @@ bool homerun_dequeue(engine_event_t *event);
 
 // nodes/leader.c
 void leader_enqueue(engine_event_t event);
-bool leader_dequeue(const engine_event_t *event);
+bool leader_dequeue(engine_event_t *event);
 
 // nodes/follower.c
 void follower_enqueue(engine_event_t event);
-bool follower_dequeue(const engine_event_t *event);
+bool follower_dequeue(engine_event_t *event);
 
 
 void engine_custom_init(void) {

@@ -9,7 +9,7 @@ void leader_enqueue(engine_event_t event) {
 }
 
 
-bool leader_dequeue(const engine_event_t *event) {
+bool leader_dequeue(engine_event_t *event) {
     if (tmp_event.type == ENGINE_NON_EVENT) {
         return false;
     }
