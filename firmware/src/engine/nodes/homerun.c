@@ -5,8 +5,11 @@
 
 
 #define HR_BUFFER_SIZE 64
-#define HR_OUTPUT_QUEUE_SIZE 16
+#define HR_OUTPUT_QUEUE_SIZE 128
 #define HR_MAX_ARMED 16
+
+#define FULL_OVERLAP_LIMIT_US    150000
+#define PARTIAL_OVERLAP_LIMIT_US 250000
 
 
 typedef struct {
@@ -16,7 +19,7 @@ typedef struct {
 } hr_layer_entry_t;
 
 
-// F layer — symbols. Active while F is held.
+// F layer — symbols. Active while F is held as a modifier.
 static const hr_layer_entry_t f_layer[] = {
     { KEY_U,     KEY_LEFT_BRACKET,  KEY_LEFT_SHIFT },  // {
     { KEY_I,     KEY_RIGHT_BRACKET, KEY_LEFT_SHIFT },  // }
@@ -47,9 +50,10 @@ static const hr_layer_entry_t *find_layer_entry(uint8_t hr_key, uint8_t trigger)
 }
 
 
-// Ambiguous buffer: HR press(es) awaiting resolution. Layer mode only fills slot 0.
-static engine_event_t ambiguous[HR_BUFFER_SIZE];
-static uint8_t ambiguous_count;
+// Ambiguous buffer: events starting with the HR press, held until resolution.
+// Tick events drive time checks but are not buffered (they have no meaning on replay).
+static engine_event_t buffer[HR_BUFFER_SIZE];
+static uint8_t buffer_count;
 
 // Output queue: resolved events ready for dequeue.
 static engine_event_t out_queue[HR_OUTPUT_QUEUE_SIZE];
@@ -57,7 +61,7 @@ static uint8_t out_head;
 static uint8_t out_tail;
 static uint8_t out_count;
 
-// Which HR key (if any) is currently acting as a layer. 0 = none.
+// Which HR key (if any) is currently acting as a layer modifier. 0 = none.
 static uint8_t active_layer_hr;
 
 // Trigger keys pressed during the active layer, awaiting release.
@@ -117,9 +121,71 @@ static void emit_combo(const hr_layer_entry_t *entry, uint64_t timestamp_us) {
 }
 
 
+// Layer-state event handler. Used for live events and for replaying buffered
+// events when we promote from AMBIGUOUS to LAYER.
+static void apply_in_layer(const engine_event_t *event) {
+    // Release of HR → end layer. Any still-armed triggers never had their
+    // release come in yet — emit combos now, drop their eventual releases.
+    if (event->type == ENGINE_RELEASE_KEY_EVENT && event->data.keycode == active_layer_hr) {
+        for (uint8_t i = 0; i < armed_count; i++) {
+            const hr_layer_entry_t *entry = find_layer_entry(active_layer_hr, armed[i]);
+            if (entry != NULL) emit_combo(entry, event->timestamp_us);
+            list_add(pending_drop, &pending_drop_count, HR_MAX_ARMED, armed[i]);
+        }
+        active_layer_hr = 0;
+        armed_count = 0;
+        return;
+    }
+
+    // Press of a layer-valid trigger → arm, emit nothing yet.
+    if (event->type == ENGINE_PRESS_KEY_EVENT &&
+        find_layer_entry(active_layer_hr, event->data.keycode) != NULL) {
+        list_add(armed, &armed_count, HR_MAX_ARMED, event->data.keycode);
+        return;
+    }
+
+    // Release of an armed trigger → emit combo.
+    if (event->type == ENGINE_RELEASE_KEY_EVENT &&
+        list_remove(armed, &armed_count, event->data.keycode)) {
+        const hr_layer_entry_t *entry = find_layer_entry(active_layer_hr, event->data.keycode);
+        if (entry != NULL) emit_combo(entry, event->timestamp_us);
+        return;
+    }
+
+    // Everything else (non-trigger keys, ticks, mouse) passes through.
+    enqueue_out(event);
+}
+
+
+// Promote from AMBIGUOUS to LAYER: HR press becomes an invisible modifier and
+// the buffered events replay through the layer logic.
+static void promote_to_layer(void) {
+    active_layer_hr = buffer[0].data.keycode;
+    for (uint8_t i = 1; i < buffer_count; i++) {
+        apply_in_layer(&buffer[i]);
+    }
+    buffer_count = 0;
+}
+
+
+// Does the buffer contain a completed press+release pair for any non-HR key?
+static bool buffer_has_completed_pair(void) {
+    for (uint8_t i = 1; i < buffer_count; i++) {
+        if (buffer[i].type != ENGINE_PRESS_KEY_EVENT) continue;
+        uint8_t kc = buffer[i].data.keycode;
+        for (uint8_t j = i + 1; j < buffer_count; j++) {
+            if (buffer[j].type == ENGINE_RELEASE_KEY_EVENT && buffer[j].data.keycode == kc) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+
 void homerun_init(void) {
-    memset(ambiguous, 0, sizeof(ambiguous));
-    ambiguous_count = 0;
+    memset(buffer, 0, sizeof(buffer));
+    buffer_count = 0;
     memset(out_queue, 0, sizeof(out_queue));
     out_head = 0;
     out_tail = 0;
@@ -131,85 +197,57 @@ void homerun_init(void) {
 
 
 void homerun_enqueue(engine_event_t event) {
-    // 1. Orphan release of a trigger whose layer has already ended — drop silently.
+    // Orphan release of a trigger whose layer already ended — drop silently.
     if (event.type == ENGINE_RELEASE_KEY_EVENT &&
         list_remove(pending_drop, &pending_drop_count, event.data.keycode)) {
         return;
     }
 
-    // 2. A layer is currently active.
+    // A layer is active — run through layer logic.
     if (active_layer_hr != 0) {
-        // Release of the HR key → end the layer.
-        if (event.type == ENGINE_RELEASE_KEY_EVENT && event.data.keycode == active_layer_hr) {
-            // Any still-armed triggers: user released HR first (fast-typing race) —
-            // emit their combos now, then drop the straggling trigger releases.
-            for (uint8_t i = 0; i < armed_count; i++) {
-                const hr_layer_entry_t *entry = find_layer_entry(active_layer_hr, armed[i]);
-                if (entry != NULL) emit_combo(entry, event.timestamp_us);
-                list_add(pending_drop, &pending_drop_count, HR_MAX_ARMED, armed[i]);
-            }
-            active_layer_hr = 0;
-            armed_count = 0;
-            return;
-        }
-
-        // Press of a layer-valid trigger → arm it, emit nothing yet.
-        if (event.type == ENGINE_PRESS_KEY_EVENT &&
-            find_layer_entry(active_layer_hr, event.data.keycode) != NULL) {
-            list_add(armed, &armed_count, HR_MAX_ARMED, event.data.keycode);
-            return;
-        }
-
-        // Release of an armed trigger → emit combo.
-        if (event.type == ENGINE_RELEASE_KEY_EVENT &&
-            list_remove(armed, &armed_count, event.data.keycode)) {
-            const hr_layer_entry_t *entry = find_layer_entry(active_layer_hr, event.data.keycode);
-            if (entry != NULL) emit_combo(entry, event.timestamp_us);
-            return;
-        }
-
-        // Everything else (non-trigger keys, ticks, mouse) passes through.
-        enqueue_out(&event);
+        apply_in_layer(&event);
         return;
     }
 
-    // 3. An HR press is in the ambiguous buffer; try to resolve with this event.
-    if (ambiguous_count > 0) {
-        uint8_t hr = ambiguous[0].data.keycode;
+    // Ambiguous: we're holding an HR press pending resolution.
+    if (buffer_count > 0) {
+        uint64_t hr_press_time = buffer[0].timestamp_us;
+        uint8_t hr = buffer[0].data.keycode;
 
-        // Release of the pending HR key → normal tap.
+        // HR release → case 1 (tap). Flush buffer verbatim + the HR release.
         if (event.type == ENGINE_RELEASE_KEY_EVENT && event.data.keycode == hr) {
-            enqueue_out(&ambiguous[0]);
-            enqueue_out(&event);
-            ambiguous_count = 0;
-            return;
-        }
-
-        // A key press while ambiguous decides the HR's fate.
-        if (event.type == ENGINE_PRESS_KEY_EVENT) {
-            if (find_layer_entry(hr, event.data.keycode) != NULL) {
-                // Layer confirmed. The HR press itself produces no output.
-                active_layer_hr = hr;
-                ambiguous_count = 0;
-                list_add(armed, &armed_count, HR_MAX_ARMED, event.data.keycode);
-                return;
+            for (uint8_t i = 0; i < buffer_count; i++) {
+                enqueue_out(&buffer[i]);
             }
-            // Non-layer key → HR resolves as a tap, then the new event passes through.
-            enqueue_out(&ambiguous[0]);
-            ambiguous_count = 0;
             enqueue_out(&event);
+            buffer_count = 0;
             return;
         }
 
-        // Ticks, mouse, etc. pass through without affecting resolution.
-        enqueue_out(&event);
+        // Non-tick events get buffered so case 1 / promotion can replay them.
+        if (event.type != ENGINE_TICK_EVENT) {
+            if (buffer_count < HR_BUFFER_SIZE) {
+                buffer[buffer_count++] = event;
+            }
+        }
+
+        // Check for resolution based on elapsed time since the HR press.
+        uint64_t elapsed = event.timestamp_us - hr_press_time;
+
+        if (elapsed > PARTIAL_OVERLAP_LIMIT_US) {
+            // Case 2: held longer than the partial-overlap limit → modifier.
+            promote_to_layer();
+        } else if (elapsed > FULL_OVERLAP_LIMIT_US && buffer_has_completed_pair()) {
+            // Case 3: another key fully press+released past the full-overlap limit → modifier.
+            promote_to_layer();
+        }
         return;
     }
 
-    // 4. Idle. Start tracking an HR key on its press; otherwise pass through.
+    // Idle. Start tracking an HR key on its press; otherwise pass through.
     if (event.type == ENGINE_PRESS_KEY_EVENT && is_homerun_key(event.data.keycode)) {
-        ambiguous[0] = event;
-        ambiguous_count = 1;
+        buffer[0] = event;
+        buffer_count = 1;
         return;
     }
 
