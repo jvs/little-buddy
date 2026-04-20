@@ -160,14 +160,24 @@ static void receive_usb_inputs(void) {
 }
 
 
+static void enqueue_keyboard_report(void) {
+    usb_output_event_t usb_event;
+    usb_event.type = USB_OUTPUT_KEYBOARD;
+    usb_event.data.keyboard.modifier = output_modifier;
+    memcpy(usb_event.data.keyboard.keycodes, output_keycodes, 6);
+    usb_output_enqueue(&usb_event);
+}
+
 static void send_usb_outputs(void) {
     engine_event_t event;
-    bool keyboard_changed = false;
     bool mouse_changed = false;
     int8_t delta_x = 0;
     int8_t delta_y = 0;
     int8_t scroll = 0;
 
+    // Keyboard events each produce their own USB report — otherwise a
+    // press+release pair drained in the same tick coalesces to no-op and
+    // nothing reaches the host. Mouse movement/scroll still coalesces.
     while (engine_output_dequeue(&event)) {
         switch (event.type) {
             case ENGINE_PRESS_KEY_EVENT: {
@@ -179,7 +189,7 @@ static void send_usb_outputs(void) {
                         if (output_keycodes[i] == 0) { output_keycodes[i] = kc; break; }
                     }
                 }
-                keyboard_changed = true;
+                enqueue_keyboard_report();
                 break;
             }
 
@@ -192,7 +202,7 @@ static void send_usb_outputs(void) {
                         if (output_keycodes[i] == kc) { output_keycodes[i] = 0; break; }
                     }
                 }
-                keyboard_changed = true;
+                enqueue_keyboard_report();
                 break;
             }
 
@@ -220,14 +230,6 @@ static void send_usb_outputs(void) {
             default:
                 break;
         }
-    }
-
-    if (keyboard_changed) {
-        usb_output_event_t usb_event;
-        usb_event.type = USB_OUTPUT_KEYBOARD;
-        usb_event.data.keyboard.modifier = output_modifier;
-        memcpy(usb_event.data.keyboard.keycodes, output_keycodes, 6);
-        usb_output_enqueue(&usb_event);
     }
 
     if (mouse_changed) {
