@@ -28,6 +28,10 @@ void engine_custom_task(void) {
 
     while (engine_input_dequeue(&event)) {
         remapper_apply(&event);
+        homerun_enqueue(event);
+    }
+
+    while (homerun_dequeue(&event)) {
         engine_output_enqueue(&event);
     }
 }
