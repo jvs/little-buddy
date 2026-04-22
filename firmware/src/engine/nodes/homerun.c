@@ -28,8 +28,21 @@ typedef struct {
 } hr_layer_entry_t;
 
 
-// F layer — symbols. Active while F is held as a modifier.
+// F layer — navigation. Active while F is held as a modifier.
 static const hr_layer_entry_t f_layer[] = {
+    { KEY_H, KEY_LEFT,      0 },
+    { KEY_J, KEY_DOWN,      0 },
+    { KEY_K, KEY_UP,        0 },
+    { KEY_L, KEY_RIGHT,     0 },
+    { KEY_U, KEY_PAGE_UP,   0 },
+    { KEY_M, KEY_PAGE_DOWN, 0 },
+};
+
+#define F_LAYER_COUNT (sizeof(f_layer) / sizeof(f_layer[0]))
+
+
+// D layer — symbols. Active while D is held as a modifier.
+static const hr_layer_entry_t d_layer[] = {
     { KEY_U,     KEY_LEFT_BRACKET,  KEY_LEFT_SHIFT },  // {
     { KEY_I,     KEY_RIGHT_BRACKET, KEY_LEFT_SHIFT },  // }
     { KEY_J,     KEY_9,             KEY_LEFT_SHIFT },  // (
@@ -39,19 +52,6 @@ static const hr_layer_entry_t f_layer[] = {
     { KEY_P,     KEY_EQUAL,         KEY_LEFT_SHIFT },  // +
     { KEY_H,     KEY_COMMA,         KEY_LEFT_SHIFT },  // <
     { KEY_L,     KEY_PERIOD,        KEY_LEFT_SHIFT },  // >
-};
-
-#define F_LAYER_COUNT (sizeof(f_layer) / sizeof(f_layer[0]))
-
-
-// D layer — navigation. Active while D is held as a modifier.
-static const hr_layer_entry_t d_layer[] = {
-    { KEY_H, KEY_LEFT,      0 },
-    { KEY_J, KEY_DOWN,      0 },
-    { KEY_K, KEY_UP,        0 },
-    { KEY_L, KEY_RIGHT,     0 },
-    { KEY_U, KEY_PAGE_UP,   0 },
-    { KEY_M, KEY_PAGE_DOWN, 0 },
 };
 
 #define D_LAYER_COUNT (sizeof(d_layer) / sizeof(d_layer[0]))
