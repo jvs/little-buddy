@@ -29,6 +29,8 @@ static char legend[LEGEND_MAX_LEN + 1];
 static bool legend_active;
 static uint64_t last_legend_render_us;
 
+static void render_legend(void);
+
 
 bool display_init(i2c_inst_t *i2c) {
     display_ok = sh1107_init(&display, i2c1);
