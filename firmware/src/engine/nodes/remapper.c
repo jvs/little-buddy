@@ -45,13 +45,20 @@ void remapper_apply(engine_event_t *event) {
     }
 
     if (event->type == ENGINE_MOVE_EVENT) {
-        // Transform mouse movement into scroll events.
-        if (event->data.move.delta_y != 0) {
+        // Transform mouse (trackpoint) movement into scroll events. Accumulate
+        // sub-tick motion so a hard push still scrolls faster than a light one,
+        // rather than clamping every event to a single tick. Sign is inverted
+        // so pushing the trackpoint up scrolls content up (natural scroll).
+        static const int16_t SCROLL_DIVISOR = 8;
+        static int16_t accum_y = 0;
+        accum_y -= event->data.move.delta_y;
+        int8_t ticks = (int8_t)(accum_y / SCROLL_DIVISOR);
+        accum_y -= (int16_t)ticks * SCROLL_DIVISOR;
+        if (ticks != 0) {
             event->type = ENGINE_SCROLL_EVENT;
-            event->data.scroll = event->data.move.delta_y > 0 ? 1 : -1;
-        } else if (event->data.move.delta_x != 0) {
-            event->type = ENGINE_SCROLL_EVENT;
-            event->data.scroll = event->data.move.delta_x > 0 ? 1 : -1;
+            event->data.scroll = ticks;
+        } else {
+            event->type = ENGINE_NON_EVENT;
         }
     }
 }
