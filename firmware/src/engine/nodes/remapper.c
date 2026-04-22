@@ -43,4 +43,15 @@ void remapper_apply(engine_event_t *event) {
     if (event->type == ENGINE_PRESS_KEY_EVENT || event->type == ENGINE_RELEASE_KEY_EVENT) {
         event->data.keycode = remap_keys(event->data.keycode);
     }
+
+    if (event->type == ENGINE_MOVE_EVENT) {
+        // Transform mouse movement into scroll events.
+        if (event->data.move.delta_y != 0) {
+            event->type = ENGINE_SCROLL_EVENT;
+            event->data.scroll = event->data.move.delta_y > 0 ? 1 : -1;
+        } else if (event->data.move.delta_x != 0) {
+            event->type = ENGINE_SCROLL_EVENT;
+            event->data.scroll = event->data.move.delta_x > 0 ? 1 : -1;
+        }
+    }
 }
