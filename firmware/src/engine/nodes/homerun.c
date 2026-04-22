@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <string.h>
 
 #include "engine/engine.h"
@@ -7,7 +8,11 @@
 
 
 // Forward decls for Z-layer actions.
-void remapper_toggle_os(void);
+void settings_cycle_os(void);
+void settings_cycle_mouse(void);
+void display_cycle_mode(void);
+
+static void enter_config_mode(void);
 
 
 #define HR_BUFFER_SIZE 64
@@ -59,17 +64,72 @@ static const hr_layer_entry_t d_layer[] = {
 
 // Z layer — device actions. Triggers fire callbacks instead of emitting keys.
 static const hr_layer_entry_t z_layer[] = {
-    { KEY_O, 0, 0, remapper_toggle_os },
-    { KEY_D, 0, 0, display_toggle },
+    { KEY_O, 0, 0, settings_cycle_os },
+    { KEY_M, 0, 0, settings_cycle_mouse },
+    { KEY_D, 0, 0, display_cycle_mode },
     { KEY_B, 0, 0, system_bootsel },
     { KEY_R, 0, 0, system_reboot },
+    { KEY_H, 0, 0, enter_config_mode },
 };
+
+
+static const char *const Z_LEGEND =
+    "Z-LAYER\n"
+    " \n"
+    "O: OS\n"
+    "M: MOUSE\n"
+    "D: DISPLAY\n"
+    "B: BOOTSEL\n"
+    "R: REBOOT\n"
+    "H: CONFIG";
 
 #define Z_LAYER_COUNT (sizeof(z_layer) / sizeof(z_layer[0]))
 
 
+// Per-HR-key enable state. Users can toggle these in the Z-layer's config mode.
+// Disabled HR keys behave as ordinary keys (no layer, no tap-latch).
+static bool hr_enabled_f = true;
+static bool hr_enabled_d = true;
+static bool hr_enabled_z = true;
+
+static bool config_mode;
+
+
+static bool *hr_enabled_slot(uint8_t keycode) {
+    if (keycode == KEY_F) return &hr_enabled_f;
+    if (keycode == KEY_D) return &hr_enabled_d;
+    if (keycode == KEY_Z) return &hr_enabled_z;
+    return NULL;
+}
+
+
 static bool is_homerun_key(uint8_t keycode) {
-    return keycode == KEY_F || keycode == KEY_D || keycode == KEY_Z;
+    bool *slot = hr_enabled_slot(keycode);
+    return slot != NULL && *slot;
+}
+
+
+static void show_config_legend(void) {
+    char buf[160];
+    snprintf(buf, sizeof(buf),
+        "CONFIG MODE\n"
+        " \n"
+        "TAP F D OR Z\n"
+        "TO TOGGLE\n"
+        " \n"
+        "F: %s\n"
+        "D: %s\n"
+        "Z: %s",
+        hr_enabled_f ? "ON" : "OFF",
+        hr_enabled_d ? "ON" : "OFF",
+        hr_enabled_z ? "ON" : "OFF");
+    display_show_legend(buf);
+}
+
+
+static void enter_config_mode(void) {
+    config_mode = true;
+    show_config_legend();
 }
 
 
@@ -184,10 +244,45 @@ static void apply_in_layer(const engine_event_t *event) {
             if (entry != NULL) emit_combo_release(entry, event->timestamp_us);
             list_add(pending_drop, &pending_drop_count, HR_MAX_ARMED, armed[i]);
         }
-        char letter[2] = { 'A' + (active_layer_hr - KEY_A), 0 };
-        display_clear_if_showing(letter);
+        if (active_layer_hr == KEY_Z) {
+            display_clear_legend();
+            config_mode = false;
+        } else {
+            char letter[2] = { 'A' + (active_layer_hr - KEY_A), 0 };
+            display_clear_if_showing(letter);
+        }
         active_layer_hr = 0;
         armed_count = 0;
+        return;
+    }
+
+    // Release of an armed trigger → emit the combo's release edge. Runs even
+    // in config mode so the H key (whose action opened config mode) gets
+    // untracked on release and we don't leave a stale pending_drop behind.
+    if (event->type == ENGINE_RELEASE_KEY_EVENT &&
+        list_remove(armed, &armed_count, event->data.keycode)) {
+        const hr_layer_entry_t *entry = find_layer_entry(active_layer_hr, event->data.keycode);
+        if (entry != NULL) emit_combo_release(entry, event->timestamp_us);
+        return;
+    }
+
+    // Config mode: presses toggle HR-key enabled state and get swallowed;
+    // non-armed releases are silently dropped.
+    if (config_mode) {
+        if (event->type == ENGINE_PRESS_KEY_EVENT) {
+            bool *slot = hr_enabled_slot(event->data.keycode);
+            if (slot != NULL) {
+                *slot = !*slot;
+                char msg[24];
+                snprintf(msg, sizeof(msg), "%s HR %c",
+                    *slot ? "ENABLED" : "DISABLED",
+                    'A' + (event->data.keycode - KEY_A));
+                show_config_legend();
+                display_show_message(msg);
+            } else {
+                display_show_message("NOT HR KEY");
+            }
+        }
         return;
     }
 
@@ -202,14 +297,6 @@ static void apply_in_layer(const engine_event_t *event) {
         }
     }
 
-    // Release of an armed trigger → emit the combo's release edge.
-    if (event->type == ENGINE_RELEASE_KEY_EVENT &&
-        list_remove(armed, &armed_count, event->data.keycode)) {
-        const hr_layer_entry_t *entry = find_layer_entry(active_layer_hr, event->data.keycode);
-        if (entry != NULL) emit_combo_release(entry, event->timestamp_us);
-        return;
-    }
-
     // Everything else (non-trigger keys, ticks, mouse) passes through.
     enqueue_out(event);
 }
@@ -219,8 +306,13 @@ static void apply_in_layer(const engine_event_t *event) {
 // the buffered events replay through the layer logic.
 static void promote_to_layer(void) {
     active_layer_hr = buffer[0].data.keycode;
-    char letter[2] = { 'A' + (active_layer_hr - KEY_A), 0 };
-    display_show_message(letter);
+    if (active_layer_hr == KEY_Z) {
+        config_mode = false;
+        display_show_legend(Z_LEGEND);
+    } else {
+        char letter[2] = { 'A' + (active_layer_hr - KEY_A), 0 };
+        display_show_message(letter);
+    }
     for (uint8_t i = 1; i < buffer_count; i++) {
         apply_in_layer(&buffer[i]);
     }

@@ -33,6 +33,31 @@ static uint8_t output_modifier;
 static uint8_t output_keycodes[6];
 static uint8_t output_buttons;
 
+// Last-seen USB reports (for debug display). `*_seen` gates the getters so we
+// return NULL when no report of that kind has arrived yet.
+static usb_mouse_data_t    last_input_mouse;
+static usb_keyboard_data_t last_input_keyboard;
+static usb_mouse_data_t    last_output_mouse;
+static usb_keyboard_data_t last_output_keyboard;
+static bool last_input_mouse_seen;
+static bool last_input_keyboard_seen;
+static bool last_output_mouse_seen;
+static bool last_output_keyboard_seen;
+
+
+const usb_mouse_data_t *engine_last_input_mouse(void) {
+    return last_input_mouse_seen ? &last_input_mouse : NULL;
+}
+const usb_keyboard_data_t *engine_last_input_keyboard(void) {
+    return last_input_keyboard_seen ? &last_input_keyboard : NULL;
+}
+const usb_mouse_data_t *engine_last_output_mouse(void) {
+    return last_output_mouse_seen ? &last_output_mouse : NULL;
+}
+const usb_keyboard_data_t *engine_last_output_keyboard(void) {
+    return last_output_keyboard_seen ? &last_output_keyboard : NULL;
+}
+
 
 void engine_init(void) {
     engine_input_init();
@@ -50,6 +75,9 @@ void engine_task(void) {
 
 
 static void process_keyboard(const usb_keyboard_data_t *keyboard, uint64_t timestamp_us) {
+    last_input_keyboard = *keyboard;
+    last_input_keyboard_seen = true;
+
     engine_event_t event;
     event.timestamp_us = timestamp_us;
 
@@ -97,6 +125,9 @@ static void process_keyboard(const usb_keyboard_data_t *keyboard, uint64_t times
 
 
 static void process_mouse(const usb_mouse_data_t *mouse, uint64_t timestamp_us) {
+    last_input_mouse = *mouse;
+    last_input_mouse_seen = true;
+
     engine_event_t event;
     event.timestamp_us = timestamp_us;
 
@@ -166,6 +197,9 @@ static void enqueue_keyboard_report(void) {
     usb_event.data.keyboard.modifier = output_modifier;
     memcpy(usb_event.data.keyboard.keycodes, output_keycodes, 6);
     usb_output_enqueue(&usb_event);
+
+    last_output_keyboard = usb_event.data.keyboard;
+    last_output_keyboard_seen = true;
 }
 
 static void send_usb_outputs(void) {
@@ -240,6 +274,9 @@ static void send_usb_outputs(void) {
         usb_event.data.mouse.scroll = scroll;
         usb_event.data.mouse.buttons = output_buttons;
         usb_output_enqueue(&usb_event);
+
+        last_output_mouse = usb_event.data.mouse;
+        last_output_mouse_seen = true;
     }
 }
 

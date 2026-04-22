@@ -1,21 +1,6 @@
 #include "engine/engine.h"
 #include "engine/keycodes.h"
-#include "display/display.h"
-
-
-typedef enum {
-    HOST_OS_MAC,
-    HOST_OS_WINDOWS,
-} host_os_t;
-
-
-static host_os_t host_os = HOST_OS_MAC;
-
-
-void remapper_toggle_os(void) {
-    host_os = (host_os == HOST_OS_MAC) ? HOST_OS_WINDOWS : HOST_OS_MAC;
-    display_show_message(host_os == HOST_OS_MAC ? "MAC" : "WINDOWS");
-}
+#include "engine/settings.h"
 
 
 static uint8_t remap_keys(uint8_t keycode) {
@@ -25,7 +10,7 @@ static uint8_t remap_keys(uint8_t keycode) {
         case KEY_CAPS_LOCK:  return KEY_ESCAPE;
     }
 
-    if (host_os == HOST_OS_MAC) {
+    if (settings_os() == OS_MODE_MAC) {
         // Swap Alt and GUI on MacOS since the physical Alt key is mapped to GUI in MacOS.
         switch (keycode) {
             case KEY_LEFT_ALT:   return KEY_LEFT_GUI;
@@ -44,7 +29,7 @@ void remapper_apply(engine_event_t *event) {
         event->data.keycode = remap_keys(event->data.keycode);
     }
 
-    if (event->type == ENGINE_MOVE_EVENT) {
+    if (event->type == ENGINE_MOVE_EVENT && settings_mouse() == MOUSE_MODE_SCROLL) {
         // Transform mouse (trackpoint) movement into scroll events. Accumulate
         // sub-tick motion so a hard push still scrolls faster than a light one,
         // rather than clamping every event to a single tick. Sign is inverted
