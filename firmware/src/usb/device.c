@@ -54,7 +54,7 @@ void send_mouse_report(usb_mouse_data_t *mouse_data) {
         mouse_data->buttons,
         mouse_data->delta_x,
         mouse_data->delta_y,
-        0,
+        mouse_data->scroll,
         0
     );
 }
