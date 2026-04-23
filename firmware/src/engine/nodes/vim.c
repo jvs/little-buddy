@@ -231,11 +231,11 @@ static void yank_to_line_end(void) {
 
 static void open_line_below(void) {
     move_line_end();
-    tap(M_NONE, KEY_ENTER, 1);
+    tap(M_SHIFT, KEY_ENTER, 1);
 }
 static void open_line_above(void) {
     move_line_start();
-    tap(M_NONE, KEY_ENTER, 1);
+    tap(M_SHIFT, KEY_ENTER, 1);
     move_up(1);
 }
 
