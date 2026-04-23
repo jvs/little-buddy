@@ -4,7 +4,7 @@
 
 static os_mode_t os_mode = OS_MODE_MAC;
 static mouse_mode_t mouse_mode = MOUSE_MODE_SCROLL;
-static bool standardize_on = false;
+static bool standardize_on = true;
 
 
 static const char *os_name(os_mode_t m) {

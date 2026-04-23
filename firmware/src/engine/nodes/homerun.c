@@ -14,6 +14,7 @@ void settings_cycle_standardize(void);
 void display_cycle_mode(void);
 
 static void enter_config_mode(void);
+static void enter_bootsel(void);
 
 
 #define HR_BUFFER_SIZE 64
@@ -69,7 +70,7 @@ static const hr_layer_entry_t z_layer[] = {
     { KEY_M, 0, 0, settings_cycle_mouse },
     { KEY_S, 0, 0, settings_cycle_standardize },
     { KEY_D, 0, 0, display_cycle_mode },
-    { KEY_B, 0, 0, system_bootsel },
+    { KEY_B, 0, 0, enter_bootsel },
     { KEY_R, 0, 0, system_reboot },
     { KEY_H, 0, 0, enter_config_mode },
 };
@@ -133,6 +134,13 @@ static void show_config_legend(void) {
 static void enter_config_mode(void) {
     config_mode = true;
     show_config_legend();
+}
+
+
+static void enter_bootsel(void) {
+    display_clear_legend();
+    display_clear_activity();
+    system_bootsel();
 }
 
 
