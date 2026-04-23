@@ -12,6 +12,7 @@ void settings_cycle_os(void);
 void settings_cycle_mouse(void);
 void settings_cycle_standardize(void);
 void display_cycle_mode(void);
+void vim_toggle(void);
 
 static void enter_config_mode(void);
 static void enter_bootsel(void);
@@ -66,26 +67,28 @@ static const hr_layer_entry_t d_layer[] = {
 
 // Z layer — device actions. Triggers fire callbacks instead of emitting keys.
 static const hr_layer_entry_t z_layer[] = {
-    { KEY_O, 0, 0, settings_cycle_os },
-    { KEY_M, 0, 0, settings_cycle_mouse },
-    { KEY_S, 0, 0, settings_cycle_standardize },
-    { KEY_D, 0, 0, display_cycle_mode },
     { KEY_B, 0, 0, enter_bootsel },
-    { KEY_R, 0, 0, system_reboot },
+    { KEY_D, 0, 0, display_cycle_mode },
     { KEY_H, 0, 0, enter_config_mode },
+    { KEY_M, 0, 0, settings_cycle_mouse },
+    { KEY_O, 0, 0, settings_cycle_os },
+    { KEY_R, 0, 0, system_reboot },
+    { KEY_S, 0, 0, settings_cycle_standardize },
+    { KEY_V, 0, 0, vim_toggle },
 };
 
 
 static const char *const Z_LEGEND =
     "Z-LAYER\n"
     " \n"
-    "O: OS\n"
-    "M: MOUSE\n"
-    "S: STANDARD\n"
-    "D: DISPLAY\n"
     "B: BOOTSEL\n"
+    "D: DISPLAY\n"
+    "H: CONFIG\n"
+    "M: MOUSE\n"
+    "O: OS\n"
     "R: REBOOT\n"
-    "H: CONFIG";
+    "S: STANDARD\n"
+    "V: VIM";
 
 #define Z_LAYER_COUNT (sizeof(z_layer) / sizeof(z_layer[0]))
 

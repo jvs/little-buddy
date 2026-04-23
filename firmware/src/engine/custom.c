@@ -1,6 +1,7 @@
 #include "engine/engine.h"
 #include "engine/keycodes.h"
 #include "engine/standardize.h"
+#include "engine/nodes/vim.h"
 
 // nodes/remapper.c
 void remapper_apply(engine_event_t *event);
@@ -37,6 +38,10 @@ void engine_custom_task(void) {
     }
 
     while (homerun_dequeue(&event)) {
+        vim_enqueue(event);
+    }
+
+    while (vim_dequeue(&event)) {
         engine_output_enqueue(&event);
     }
 }
