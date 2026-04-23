@@ -10,6 +10,7 @@
 // Forward decls for Z-layer actions.
 void settings_cycle_os(void);
 void settings_cycle_mouse(void);
+void settings_cycle_standardize(void);
 void display_cycle_mode(void);
 
 static void enter_config_mode(void);
@@ -66,6 +67,7 @@ static const hr_layer_entry_t d_layer[] = {
 static const hr_layer_entry_t z_layer[] = {
     { KEY_O, 0, 0, settings_cycle_os },
     { KEY_M, 0, 0, settings_cycle_mouse },
+    { KEY_S, 0, 0, settings_cycle_standardize },
     { KEY_D, 0, 0, display_cycle_mode },
     { KEY_B, 0, 0, system_bootsel },
     { KEY_R, 0, 0, system_reboot },
@@ -78,6 +80,7 @@ static const char *const Z_LEGEND =
     " \n"
     "O: OS\n"
     "M: MOUSE\n"
+    "S: STANDARD\n"
     "D: DISPLAY\n"
     "B: BOOTSEL\n"
     "R: REBOOT\n"

@@ -1,5 +1,6 @@
 #include "engine/engine.h"
 #include "engine/keycodes.h"
+#include "engine/standardize.h"
 
 // nodes/remapper.c
 void remapper_apply(engine_event_t *event);
@@ -28,6 +29,10 @@ void engine_custom_task(void) {
 
     while (engine_input_dequeue(&event)) {
         remapper_apply(&event);
+        standardize_enqueue(event);
+    }
+
+    while (standardize_dequeue(&event)) {
         homerun_enqueue(event);
     }
 

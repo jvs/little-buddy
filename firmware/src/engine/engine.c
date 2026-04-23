@@ -202,6 +202,7 @@ static void enqueue_keyboard_report(void) {
     last_output_keyboard_seen = true;
 }
 
+
 static void send_usb_outputs(void) {
     engine_event_t event;
     bool mouse_changed = false;

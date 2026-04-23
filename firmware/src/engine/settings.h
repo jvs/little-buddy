@@ -13,10 +13,14 @@ typedef enum {
     MOUSE_MODE_COUNT
 } mouse_mode_t;
 
+#include <stdbool.h>
+
 os_mode_t settings_os(void);
 mouse_mode_t settings_mouse(void);
+bool settings_standardize(void);
 
 void settings_cycle_os(void);
 void settings_cycle_mouse(void);
+void settings_cycle_standardize(void);
 
 #endif
