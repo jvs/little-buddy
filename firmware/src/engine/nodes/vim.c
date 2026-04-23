@@ -38,6 +38,16 @@ static uint8_t phys_mods;
 static engine_event_t out_queue[VIM_QUEUE_SIZE];
 static uint8_t out_head, out_tail, out_count;
 
+// Track a single "held motion" so hjkl can auto-repeat at the OS level.
+// When set, we've emitted press(held_output_kc) with held_output_mods, and
+// are waiting for the matching input release to emit the teardown.
+static uint8_t held_input_kc;
+static uint8_t held_output_kc;
+static uint8_t held_output_mods;
+
+// Keycode of the raw event currently being dispatched (for hold tracking).
+static uint8_t current_input_kc;
+
 
 // --- Queue ------------------------------------------------------------------
 
@@ -81,6 +91,28 @@ static void emit_mods(uint8_t mods, bool press) {
     } else {
         for (int i = 3; i >= 0; i--) if (mods & bits[i]) emit_release(keys[i]);
     }
+}
+
+static void release_held(void) {
+    if (held_output_kc == 0) return;
+    emit_release(held_output_kc);
+    emit_mods(held_output_mods, false);
+    held_input_kc = 0;
+    held_output_kc = 0;
+    held_output_mods = 0;
+}
+
+// Start an OS-level auto-repeat for `kc` with `mods`, keyed to the physical
+// input keycode currently being dispatched. The matching release event will
+// tear it down. Only one hold is tracked at a time; a second call releases
+// the previous hold first.
+static void hold_motion(uint8_t mods, uint8_t kc) {
+    release_held();
+    held_input_kc = current_input_kc;
+    held_output_kc = kc;
+    held_output_mods = mods;
+    emit_mods(mods, true);
+    emit_press(kc);
 }
 
 // Emit `count` presses of (mods+kc). Modifiers pressed once, key tapped N
@@ -227,17 +259,20 @@ static void reset_pending(void) {
 }
 
 static void enter_insert(void) {
+    release_held();
     mode = VIM_MODE_INSERT;
     show_mode();
 }
 
 static void enter_visual(void) {
+    release_held();
     mode = VIM_MODE_VISUAL;
     emit_press(KEY_LEFT_SHIFT);
     show_mode();
 }
 
 static void exit_visual_to_normal(void) {
+    release_held();
     // Release the held Shift before dropping back to NORMAL.
     emit_release(KEY_LEFT_SHIFT);
     mode = VIM_MODE_NORMAL;
@@ -315,11 +350,12 @@ static void handle_normal(char c) {
 
 static void try_finalize_normal(uint16_t count) {
     if (pending_len == 1) {
+        bool no_count = repeat_count == 0;
         switch (pending[0]) {
-            case 'h': move_left(count);          break;
-            case 'j': move_down(count);          break;
-            case 'k': move_up(count);            break;
-            case 'l': move_right(count);         break;
+            case 'h': if (no_count) hold_motion(M_NONE, KEY_LEFT);  else move_left(count);  break;
+            case 'j': if (no_count) hold_motion(M_NONE, KEY_DOWN);  else move_down(count);  break;
+            case 'k': if (no_count) hold_motion(M_NONE, KEY_UP);    else move_up(count);    break;
+            case 'l': if (no_count) hold_motion(M_NONE, KEY_RIGHT); else move_right(count); break;
             case 'w': case 'W': move_word_forward(count);  break;
             case 'b': case 'B': move_word_backward(count); break;
             case 'e': case 'E': move_word_end(count);      break;
@@ -437,11 +473,12 @@ static void handle_visual(char c) {
 
 static void try_finalize_visual(uint16_t count) {
     if (pending_len == 1) {
+        bool no_count = repeat_count == 0;
         switch (pending[0]) {
-            case 'h': move_left(count);           break;
-            case 'j': move_down(count);           break;
-            case 'k': move_up(count);             break;
-            case 'l': move_right(count);          break;
+            case 'h': if (no_count) hold_motion(M_NONE, KEY_LEFT);  else move_left(count);  break;
+            case 'j': if (no_count) hold_motion(M_NONE, KEY_DOWN);  else move_down(count);  break;
+            case 'k': if (no_count) hold_motion(M_NONE, KEY_UP);    else move_up(count);    break;
+            case 'l': if (no_count) hold_motion(M_NONE, KEY_RIGHT); else move_right(count); break;
             case 'w': case 'W': move_word_forward(count);  break;
             case 'b': case 'B': move_word_backward(count); break;
             case 'e': case 'E': move_word_end(count);      break;
@@ -490,7 +527,8 @@ void vim_toggle(void) {
         mode = VIM_MODE_NORMAL;
     } else {
         // Tear down whatever state we're in: release held shift if visual,
-        // drop parsing state, mark off.
+        // release any held motion, drop parsing state, mark off.
+        release_held();
         if (mode == VIM_MODE_VISUAL) emit_release(KEY_LEFT_SHIFT);
         mode = VIM_MODE_OFF;
     }
@@ -513,6 +551,13 @@ void vim_enqueue(engine_event_t event) {
         uint8_t bit = 1u << (event.data.keycode - 0xE0);
         if (is_press) phys_mods |= bit;
         else          phys_mods &= ~bit;
+    }
+
+    // Held-motion release: if this event is the release of the physical key
+    // that started an OS-level auto-repeat, tear it down regardless of mode.
+    if (is_release && held_input_kc != 0 && event.data.keycode == held_input_kc) {
+        release_held();
+        return;
     }
 
     if (mode == VIM_MODE_OFF) {
@@ -554,6 +599,7 @@ void vim_enqueue(engine_event_t event) {
     char c = keycode_to_char(event.data.keycode, shift);
     if (c == 0) return;  // unmapped: drop in NORMAL/VISUAL
 
+    current_input_kc = event.data.keycode;
     if (mode == VIM_MODE_NORMAL) handle_normal(c);
     else                          handle_visual(c);
 }
