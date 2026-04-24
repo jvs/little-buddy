@@ -184,7 +184,7 @@ void sh1107_set_power(sh1107_t *display, bool on) {
 
 void sh1107_draw_buffer(sh1107_t *display, const uint8_t *pixel_data) {
     // Copy pixel data directly to framebuffer
-    memcpy(display->buffer, pixel_data, 1024);
+    memcpy(display->buffer, pixel_data, SH1107_BUFFER_SIZE);
     // sh1107_display(display);
 
     // OR send page by page to display (if you want to avoid framebuffer)

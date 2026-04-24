@@ -46,7 +46,7 @@ int main() {
     // Show USB ready message
     if (display_ok) {
         display_clear_buffer();
-        display_draw_icon(&icon_apple_logo);
+        display_draw_icon(icon_apple_logo);
         display_show_buffer();
     }
 

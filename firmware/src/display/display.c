@@ -68,9 +68,9 @@ void display_draw_string(int16_t x, int16_t y, const char *str) {
 }
 
 
-void display_draw_icon(const icon_t *icon) {
-    if (!display_ok || icon == NULL) return;
-    sh1107_draw_buffer(&display, icon->data);
+void display_draw_icon(const uint8_t *icon_data) {
+    if (!display_ok || icon_data == NULL) return;
+    sh1107_draw_buffer(&display, icon_data);
 }
 
 
