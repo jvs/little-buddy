@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "display/icons.h"
+
 bool display_init(i2c_inst_t *i2c);
 void display_clear_buffer(void);
 void display_show_buffer(void);
