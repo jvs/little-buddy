@@ -5,7 +5,7 @@
 
 typedef struct {
     const char* name;
-    const uint8_t data[1024];
+    const uint8_t *data;
 } icon_t;
 
 // Icon declarations (add your icons here)
