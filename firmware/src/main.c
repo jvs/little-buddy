@@ -46,19 +46,8 @@ int main() {
     // Show USB ready message
     if (display_ok) {
         display_clear_buffer();
-
-        // Column calibration: lit bytes at buffer col 0 and col 127, across all 16 pages.
-        static uint8_t column_test[2048];
-        for (int page = 0; page < 16; page++) {
-            column_test[page * 128 + 0]   = 0xFF;
-            column_test[page * 128 + 127] = 0xFF;
-        }
-        display_draw_icon(column_test);
+        display_draw_icon(icon_apple_logo);
         display_show_buffer();
-        sleep_ms(3000);
-
-        // display_draw_icon(icon_apple_logo);
-        // display_show_buffer();
     }
 
     while (1) {
