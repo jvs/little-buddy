@@ -68,6 +68,12 @@ void display_draw_string(int16_t x, int16_t y, const char *str) {
 }
 
 
+void display_draw_icon(const icon_t *icon);
+    if (!display_ok || icon == NULL) return;
+    sh1107_draw_buffer(&display, icon->data);
+}
+
+
 display_mode_t display_mode(void) { return mode; }
 
 
