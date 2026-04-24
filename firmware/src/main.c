@@ -47,11 +47,13 @@ int main() {
     if (display_ok) {
         display_clear_buffer();
 
-        // Draw vertical line at buffer x=0 and x=127 to calibrate columns
-        for (int16_t y = 0; y < 128; y++) {
-            display_set_pixel(0, y, true);
-            display_set_pixel(127, y, true);
+        // Column calibration: lit bytes at buffer col 0 and col 127, across all 16 pages.
+        static uint8_t column_test[2048];
+        for (int page = 0; page < 16; page++) {
+            column_test[page * 128 + 0]   = 0xFF;
+            column_test[page * 128 + 127] = 0xFF;
         }
+        display_draw_icon(column_test);
         display_show_buffer();
         sleep_ms(3000);
 
