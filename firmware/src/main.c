@@ -46,8 +46,17 @@ int main() {
     // Show USB ready message
     if (display_ok) {
         display_clear_buffer();
-        display_draw_icon(icon_apple_logo);
+
+        // Draw vertical line at buffer x=0 and x=127 to calibrate columns
+        for (int16_t y = 0; y < 128; y++) {
+            display_set_pixel(0, y, true);
+            display_set_pixel(127, y, true);
+        }
         display_show_buffer();
+        sleep_ms(3000);
+
+        // display_draw_icon(icon_apple_logo);
+        // display_show_buffer();
     }
 
     while (1) {
