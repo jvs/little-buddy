@@ -37,7 +37,7 @@
 #define SH1107_EXTERNALVCC 0x1
 #define SH1107_SWITCHCAPVCC 0x2
 #define SH1107_DCDC 0xAD
-#define SH1107_COLUMN_OFFSET 115
+#define SH1107_COLUMN_OFFSET 100
 
 typedef struct {
     i2c_inst_t *i2c;
