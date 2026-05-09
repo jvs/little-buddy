@@ -32,7 +32,13 @@ bool settings_standardize(void) { return standardize_on; }
 
 void settings_cycle_os(void) {
     os_mode = (os_mode + 1) % OS_MODE_COUNT;
-    display_show_message(os_name(os_mode));
+    display_clear_buffer();
+    switch (os_mode) {
+        case OS_MODE_MAC:     display_draw_icon(icon_apple_logo);   break;
+        case OS_MODE_WINDOWS: display_draw_icon(icon_windows_logo); break;
+        default:              display_draw_string(1, 10, os_name(os_mode)); break;
+    }
+    display_show_buffer();
 }
 
 

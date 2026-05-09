@@ -8,6 +8,7 @@
 
 #include "display/display.h"
 #include "engine/engine.h"
+#include "engine/settings.h"
 #include "usb/usb.h"
 
 
@@ -46,7 +47,7 @@ int main() {
     // Show USB ready message
     if (display_ok) {
         display_clear_buffer();
-        display_draw_icon(icon_apple_logo);
+        display_draw_icon(settings_os() == OS_MODE_WINDOWS ? icon_windows_logo : icon_apple_logo);
         display_show_buffer();
     }
 
