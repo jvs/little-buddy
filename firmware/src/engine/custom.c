@@ -1,6 +1,6 @@
 #include "engine/engine.h"
 #include "engine/keycodes.h"
-#include "engine/standardize.h"
+#include "engine/nodes/standardize.h"
 #include "engine/nodes/vim.h"
 
 // nodes/remapper.c
