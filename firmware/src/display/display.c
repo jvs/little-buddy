@@ -23,6 +23,7 @@ static display_mode_t mode = DISPLAY_MODE_NORMAL;
 
 static char current_message[MESSAGE_MAX_LEN + 1];
 static uint64_t last_message_time_us;
+static uint64_t last_render_time_us;
 static uint64_t last_debug_render_us;
 
 static char legend[LEGEND_MAX_LEN + 1];
@@ -46,6 +47,8 @@ void display_clear_buffer(void) {
 
 void display_show_buffer(void) {
     if (!display_ok) return;
+    last_render_time_us = time_us_64();
+    sh1107_set_power(&display, true);
     sh1107_display(&display);
 }
 
@@ -134,6 +137,7 @@ void display_show_message(const char *text) {
     if (x < 0) x = 0;
     int16_t y = 60;
 
+    sh1107_set_power(&display, true);
     sh1107_clear(&display);
     sh1107_draw_string(&display, x, y, current_message);
     sh1107_display(&display);
@@ -274,6 +278,7 @@ void display_tick(void) {
 
     if (current_message[0] != 0 && now - last_message_time_us >= IDLE_TIMEOUT_US) {
         current_message[0] = 0;
+        last_render_time_us = 0;
         if (!legend_active && mode != DISPLAY_MODE_DEBUG) {
             sh1107_clear(&display);
             sh1107_display(&display);
@@ -295,5 +300,13 @@ void display_tick(void) {
         if (now - last_debug_render_us < DEBUG_REFRESH_US) return;
         last_debug_render_us = now;
         render_debug();
+        return;
+    }
+
+    // Blank and power off after 60s of no display updates (e.g. idle logo).
+    if (last_render_time_us != 0 && now - last_render_time_us >= IDLE_TIMEOUT_US) {
+        last_render_time_us = 0;
+        sh1107_clear(&display);
+        sh1107_set_power(&display, false);
     }
 }
