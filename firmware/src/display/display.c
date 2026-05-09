@@ -307,6 +307,7 @@ void display_tick(void) {
     if (last_render_time_us != 0 && now - last_render_time_us >= IDLE_TIMEOUT_US) {
         last_render_time_us = 0;
         sh1107_clear(&display);
+        sh1107_display(&display);  // flush blank to GDRAM before power-off to avoid stale flicker on wake
         sh1107_set_power(&display, false);
     }
 }
