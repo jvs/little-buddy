@@ -187,6 +187,9 @@ static uint8_t out_count;
 // Which HR key (if any) is currently acting as a layer modifier. 0 = none.
 static uint8_t active_layer_hr;
 
+// Whether shift is currently held through the V/N layer output.
+static bool vn_shift_held;
+
 // Trigger keys pressed during the active layer, awaiting release.
 static uint8_t armed[HR_MAX_ARMED];
 static uint8_t armed_count;
@@ -275,6 +278,7 @@ static void apply_in_layer(const engine_event_t *event) {
         }
         active_layer_hr = 0;
         armed_count = 0;
+        vn_shift_held = false;
         return;
     }
 
@@ -308,14 +312,31 @@ static void apply_in_layer(const engine_event_t *event) {
         return;
     }
 
+    // V/N layers — track shift presses/releases so the prefix can stay shift-neutral.
+    if (active_layer_hr == KEY_V || active_layer_hr == KEY_N) {
+        uint8_t kc = event->data.keycode;
+        bool is_shift = (kc == KEY_LEFT_SHIFT || kc == KEY_RIGHT_SHIFT);
+        if (is_shift) {
+            if (event->type == ENGINE_PRESS_KEY_EVENT)   vn_shift_held = true;
+            if (event->type == ENGINE_RELEASE_KEY_EVENT) vn_shift_held = false;
+            enqueue_out(event);
+            return;
+        }
+    }
+
     // V/N layers — tap S-F8 or S-F9 as prefix, then pass the key through unchanged.
+    // If shift is already held, omit the shift wrap (tapping F8 with shift live = S-F8).
     if (event->type == ENGINE_PRESS_KEY_EVENT &&
         (active_layer_hr == KEY_V || active_layer_hr == KEY_N)) {
         uint8_t prefix = (active_layer_hr == KEY_V) ? KEY_F8 : KEY_F9;
-        emit_key(ENGINE_PRESS_KEY_EVENT,   KEY_LEFT_SHIFT, event->timestamp_us);
-        emit_key(ENGINE_PRESS_KEY_EVENT,   prefix,         event->timestamp_us);
-        emit_key(ENGINE_RELEASE_KEY_EVENT, prefix,         event->timestamp_us);
-        emit_key(ENGINE_RELEASE_KEY_EVENT, KEY_LEFT_SHIFT, event->timestamp_us);
+        if (!vn_shift_held) {
+            emit_key(ENGINE_PRESS_KEY_EVENT, KEY_LEFT_SHIFT, event->timestamp_us);
+        }
+        emit_key(ENGINE_PRESS_KEY_EVENT,   prefix, event->timestamp_us);
+        emit_key(ENGINE_RELEASE_KEY_EVENT, prefix, event->timestamp_us);
+        if (!vn_shift_held) {
+            emit_key(ENGINE_RELEASE_KEY_EVENT, KEY_LEFT_SHIFT, event->timestamp_us);
+        }
         enqueue_out(event);
         return;
     }
@@ -379,6 +400,7 @@ void homerun_init(void) {
     active_layer_hr = 0;
     armed_count = 0;
     pending_drop_count = 0;
+    vn_shift_held = false;
 }
 
 
