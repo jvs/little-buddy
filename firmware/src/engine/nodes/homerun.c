@@ -308,12 +308,14 @@ static void apply_in_layer(const engine_event_t *event) {
         return;
     }
 
-    // V/N layers — tap a prefix key (F13/F14), then pass the key through unchanged.
+    // V/N layers — tap S-F8 or S-F9 as prefix, then pass the key through unchanged.
     if (event->type == ENGINE_PRESS_KEY_EVENT &&
         (active_layer_hr == KEY_V || active_layer_hr == KEY_N)) {
-        uint8_t prefix = (active_layer_hr == KEY_V) ? KEY_F13 : KEY_F16;
-        emit_key(ENGINE_PRESS_KEY_EVENT,   prefix, event->timestamp_us);
-        emit_key(ENGINE_RELEASE_KEY_EVENT, prefix, event->timestamp_us);
+        uint8_t prefix = (active_layer_hr == KEY_V) ? KEY_F8 : KEY_F9;
+        emit_key(ENGINE_PRESS_KEY_EVENT,   KEY_LEFT_SHIFT, event->timestamp_us);
+        emit_key(ENGINE_PRESS_KEY_EVENT,   prefix,         event->timestamp_us);
+        emit_key(ENGINE_RELEASE_KEY_EVENT, prefix,         event->timestamp_us);
+        emit_key(ENGINE_RELEASE_KEY_EVENT, KEY_LEFT_SHIFT, event->timestamp_us);
         enqueue_out(event);
         return;
     }
