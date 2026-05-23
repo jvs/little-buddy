@@ -98,6 +98,8 @@ static const char *const Z_LEGEND =
 static bool hr_enabled_f = true;
 static bool hr_enabled_d = true;
 static bool hr_enabled_z = true;
+static bool hr_enabled_v = true;
+static bool hr_enabled_n = true;
 
 static bool config_mode;
 
@@ -106,6 +108,8 @@ static bool *hr_enabled_slot(uint8_t keycode) {
     if (keycode == KEY_F) return &hr_enabled_f;
     if (keycode == KEY_D) return &hr_enabled_d;
     if (keycode == KEY_Z) return &hr_enabled_z;
+    if (keycode == KEY_V) return &hr_enabled_v;
+    if (keycode == KEY_N) return &hr_enabled_n;
     return NULL;
 }
 
@@ -121,15 +125,19 @@ static void show_config_legend(void) {
     snprintf(buf, sizeof(buf),
         "CONFIG MODE\n"
         " \n"
-        "TAP F D OR Z\n"
+        "TAP KEY\n"
         "TO TOGGLE\n"
         " \n"
         "F: %s\n"
         "D: %s\n"
-        "Z: %s",
+        "Z: %s\n"
+        "V: %s\n"
+        "N: %s",
         hr_enabled_f ? "ON" : "OFF",
         hr_enabled_d ? "ON" : "OFF",
-        hr_enabled_z ? "ON" : "OFF");
+        hr_enabled_z ? "ON" : "OFF",
+        hr_enabled_v ? "ON" : "OFF",
+        hr_enabled_n ? "ON" : "OFF");
     display_show_legend(buf);
 }
 
@@ -297,6 +305,16 @@ static void apply_in_layer(const engine_event_t *event) {
                 display_show_message("NOT HR KEY");
             }
         }
+        return;
+    }
+
+    // V/N layers — tap a prefix key (F13/F14), then pass the key through unchanged.
+    if (event->type == ENGINE_PRESS_KEY_EVENT &&
+        (active_layer_hr == KEY_V || active_layer_hr == KEY_N)) {
+        uint8_t prefix = (active_layer_hr == KEY_V) ? KEY_F13 : KEY_F14;
+        emit_key(ENGINE_PRESS_KEY_EVENT,   prefix, event->timestamp_us);
+        emit_key(ENGINE_RELEASE_KEY_EVENT, prefix, event->timestamp_us);
+        enqueue_out(event);
         return;
     }
 
